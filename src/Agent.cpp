@@ -43,7 +43,7 @@ void Agent::act(){
 	myPath = costmap.aStarPath(cLoc, gLoc);
 	cLoc = myPath[1];
 	myPath.erase(myPath.begin());
-	cerr << "Agent::act::cLoc / gLoc: " << cLoc << " / " << gLoc << endl;
+	//cout << "Agent::act::cLoc / gLoc: " << cLoc << " / " << gLoc << endl;
 	//cout << "Agent::act::out" << endl;
 }
 
@@ -76,7 +76,7 @@ void Agent::soloPlan(string method, int timeLeft){
 			}
 		}
 	}
-	cerr << "out of solo plan" << endl;
+	//cout << "out of solo plan" << endl;
 }
 
 

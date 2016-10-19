@@ -33,6 +33,24 @@ World::World(string fName, int resolution, float obsThresh, float comThresh){
 	cout << "World::Finished building " << fName << ".yml" << endl;
 }
 
+bool World::communicationPossible(Point a, Point b){
+	Mat ta = Mat::zeros(costmap.cells.size(), CV_8UC1);
+
+	float dist = sqrt(pow(a.x-b.x,2) + pow(a.y-b.y,2));
+	if( dist > this->commThresh){
+		return false;
+	}
+
+	LineIterator it(ta, a, b, 4, false);
+	for(int i=0; i<it.count; i++, ++it){
+		Point pp  = it.pos();
+		if(costmap.cells.at<short>(pp) > costmap.unknown){
+			return false;
+		}
+	}
+	return true;
+}
+
 void World::initializeMaps(Mat &imgGray, int resolution){
 
 	costmap.cells = Mat::zeros(imgGray.rows / resolution, imgGray.cols / resolution, CV_16S);

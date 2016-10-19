@@ -38,7 +38,7 @@ int main(){
 	srand( time(NULL) );
 	bool videoFlag = false;
 
-	int numAgents = 1;
+	int numAgents = 2;
 	int numIterations = 1;
 
 	int gSpace = 5;
@@ -47,8 +47,10 @@ int main(){
 	int maxTime = 2000;
 
 	vector<string> fName;
-	fName.push_back("mineMap");
+	//fName.push_back("mineMap");
 	//fName.push_back("test6");
+	//fName.push_back("slamMap");
+	fName.push_back("tunnelTest");
 	//loadMapNames(fName);
 
 	int map_iter = 0;//findMapToRun(fName);
@@ -120,12 +122,10 @@ int main(){
 				world.observe(observer.cLoc, observer.costmap);
 				cout << "Main::made observations" << endl;
 
-
-
 				// all agents communicate
 				for(int i=0; i<numAgents-1; i++){
 					for(int j=i; j<numAgents; j++){
-						if(i!=j){
+						if(i!=j && world.communicationPossible(agents[i].cLoc, agents[j].cLoc)){
 							agents[i].shareCostmap(agents[i].costmap, agents[j].costmap);
 							agents[j].shareCostmap(agents[j].costmap, agents[i].costmap);
 							agents[i].agentLocs[j] = agents[j].cLoc;
