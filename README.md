@@ -1,6 +1,6 @@
 # ROB538_project
 
-For now, src/rob538Project.cpp is the main file that calls everything else. Start trying to understand the code there. All of the other files in /src are classes that hold the agents and the world as well as all of the agents tools for planning, their costmap, planner, ect.
+For now, src/rob538Project.cpp is the main file that calls everything else. Start trying to understand the code there. All of the other files in /src are classes that hold the agents and the world as well as all of the agents tools for planning, their costmap, planner, ect. The jpgs are the different maps. Feel free to make your own using paint or by downloading, as long as the free values are white and obstacles are not, it should work.
 
 To make it work you will need to have opencv installed and linked. This is because I use open cv mats to hold all of the data and visualize the simulator.
 
