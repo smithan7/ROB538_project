@@ -8,6 +8,8 @@ I will add comments throughout the code to try and explain what each step is doi
 
 Some functionality I have developed but not included in this release is the ability to make a high level travel graph of the space and then plan over that. It significantly trims the search space when searching for options, I can add it if we want to, I didn't for now because that adds a few more classes and I felt like this was already an overwhelming amount to throw at you guys.
 
+I currently don't have the communications checker built in, but I will try and get it built in soon to see if agents can communicate. Currently, all agents can communicate at all times, it will be simple to add this check.
+
 The current plan is to simply greedily explore the map, without conflict resolution (two agents can explore the same point) when/if I bring over the travel graph this will go away as agents will plan using prospective poses and information gain at those poses while accounting for other agent poses.
 
 
