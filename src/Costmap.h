@@ -29,6 +29,8 @@ public:
 
 	void prettyPrintCostmap();
 	void findFrontiers();
+	vector<float> nnGetObsFrntByQuadrant( Point cLoc );
+	void shareCostmap(Costmap &b);
 
 	// useful stuff
 	int obsFree, infFree, domFree, unknown, obsWall, infWall, inflatedWall;

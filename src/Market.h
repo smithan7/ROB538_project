@@ -25,12 +25,14 @@ class Market {
 public:
 	Market();
 	void init(int nAgents, int myIndex);
+	void shareMarket( Market &in );
+	void updateMarket( Point cLoc );
+	void iterateTime();
+	void printMarket();
 	virtual ~Market();
 
-	vector<Point> locations;
-	vector<float> values;
-	vector<float> rewards;
-	vector<float> costs;
+	vector<Point> cLocs;
+	vector<int> time;
 
 	int myIndex;
 

@@ -10,6 +10,9 @@
 
 bool pointCompare(Point &a, Point &b);
 bool pointOnMat(Point &a, Mat &b);
+float distP2P( Point a, Point b);
+float distP2PSq( Point a, Point b);
+int getQuad( Point cLoc, Point t);
 
 Costmap::Costmap(){
 	this->cObsFree = {255,255,255};
@@ -29,6 +32,25 @@ Costmap::Costmap(){
 	this->infWall = 202;
 	this->inflatedWall = 203;
 
+}
+
+void Costmap::shareCostmap( Costmap &B ){
+	for(int i=0; i<this->cells.cols; i++){
+		for(int j=0; j<this->cells.rows; j++){
+			Point a(i,j);
+			// share cells
+			if(this->cells.at<short>(a) != B.cells.at<short>(a) ){ // do we think the same thing?
+				if(this->cells.at<short>(a) == this->unknown){
+					this->cells.at<short>(a) = B.cells.at<short>(a); // if this->doesn't know, anything is better
+				}
+				else if(this->cells.at<short>(a) == this->infFree || this->cells.at<short>(a) == this->infWall){ // this->think its inferred
+					if(B.cells.at<short>(a) == B.obsFree || B.cells.at<short>(a) == B.obsWall){ // B has observed
+						this->cells.at<short>(a) = B.cells.at<short>(a);
+					}
+				}
+			}
+		}
+	}
 }
 
 Costmap::~Costmap() {}
@@ -56,6 +78,53 @@ void Costmap::findFrontiers(){
 			}
 		}
 	}
+}
+
+vector<float> Costmap::nnGetObsFrntByQuadrant( Point cLoc ){
+
+	vector<float> frntVals;
+	for(int i=0; i<4; i++){
+		frntVals.push_back(0);
+	}
+
+	for(size_t i=0; i<cells.cols; i++){
+		for(size_t j=0; j<cells.rows; j++){
+			Point t(i,j);
+			if(cells.at<short>(t) == infFree){
+				float distSq = distP2PSq(t, cLoc);
+
+				int quad = getQuad( cLoc, t );
+				frntVals[quad] += 1 / distSq;
+			}
+		}
+	}
+}
+
+int getQuad( Point cLoc, Point t){
+	if( t.x - cLoc.x >= 0 ){
+		if( t.y  >= cLoc.y ){
+			return 0;
+		}
+		else{
+			return 3;
+		}
+	}
+	else{
+		if( t.y >= cLoc.y ){
+			return 1;
+		}
+		else{
+			return 2;
+		}
+	}
+}
+
+float distP2P( Point a, Point b){
+	return sqrt( pow(a.x-b.x,2) + pow(a.y-b.y,2) );
+}
+
+float distP2PSq( Point a, Point b){
+	return pow(a.x-b.x,2) + pow(a.y-b.y,2);
 }
 
 

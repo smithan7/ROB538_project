@@ -28,9 +28,8 @@ public:
 	Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents);
 	void pickMyColor();
 	~Agent();
-	void shareCostmap(Costmap &A, Costmap &B);
 	void showCellsPlot();
-	void shareGoals(vector<int> inG, int index);
+	void communicate(Costmap &cIn, Market &mIn);
 	int myIndex;
 	Scalar myColor;
 	float comThresh;
@@ -45,7 +44,8 @@ public:
 	Market market;
 
 	Point cLoc, gLoc; // for map
-	vector<Point> myPath, agentLocs;
+	vector<Point> myPath;
+	vector<Point> history;
 
 	// costmap class stuff
 	Costmap costmap;

@@ -20,9 +20,12 @@ Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThr
 	this->myIndex = myIndex;
 	this->pickMyColor();
 
-	for(int i=0; i<numAgents; i++){
-		agentLocs.push_back(sLoc);
-	}
+	market.init(numAgents, myIndex );
+}
+
+void Agent::communicate(Costmap &cIn, Market &mIn){
+	this->costmap.shareCostmap(cIn);
+	this->market.shareMarket( mIn );
 }
 
 void Agent::act(){
@@ -45,6 +48,9 @@ void Agent::act(){
 	myPath.erase(myPath.begin());
 	//cout << "Agent::act::cLoc / gLoc: " << cLoc << " / " << gLoc << endl;
 	//cout << "Agent::act::out" << endl;
+
+	history.push_back(cLoc);
+	market.updateMarket(cLoc);
 }
 
 
@@ -138,72 +144,6 @@ void Agent::pickMyColor(){
 	}
 	else if(this->myIndex == 9){
 		// white
-	}
-}
-
-void Agent::shareCostmap(Costmap &A, Costmap &B){
-	for(int i=0; i<A.cells.cols; i++){
-		for(int j=0; j<A.cells.rows; j++){
-			Point a(i,j);
-
-			// share cells
-
-			if(A.cells.at<short>(a) != B.cells.at<short>(a) ){ // do we think the same thing?
-				if(A.cells.at<short>(a) == A.unknown){
-					A.cells.at<short>(a) = B.cells.at<short>(a); // if A doesn't know, anything is better
-				}
-				else if(A.cells.at<short>(a) == A.infFree || A.cells.at<short>(a) == A.infWall){ // A think its inferred
-					if(B.cells.at<short>(a) == B.obsFree || B.cells.at<short>(a) == B.obsWall){ // B has observed
-						A.cells.at<short>(a) = B.cells.at<short>(a);
-					}
-				}
-				else if(B.cells.at<short>(a) == B.unknown){ // B doesn't know
-					B.cells.at<short>(a) = A.cells.at<short>(a); // B doesn't know, anything is better
-				}
-				else if(B.cells.at<short>(a) == B.infFree || B.cells.at<short>(a) == B.infWall){ // B think its inferred
-					if(A.cells.at<short>(a) == A.obsFree || A.cells.at<short>(a) == A.obsWall){ // A has observed
-						B.cells.at<short>(a) = A.cells.at<short>(a);
-					}
-				}
-			}
-
-
-			// share search
-			/*
-			if(A.searchReward.at<float>(a) < B.searchReward.at<float>(a) ){ // do we think the same thing?
-				B.searchReward.at<float>(a) = A.searchReward.at<float>(a);
-			}
-			else if(A.searchReward.at<float>(a) > B.searchReward.at<float>(a)){
-				A.searchReward.at<float>(a) = B.searchReward.at<float>(a);
-			}
-
-			// share occ
-
-			float minA = INFINITY;
-			float minB = INFINITY;
-
-			if(1-A.occ.at<float>(a) > A.occ.at<float>(a) ){
-				minA = 1-A.occ.at<float>(a);
-			}
-			else{
-				minA = A.occ.at<float>(a);
-			}
-
-			if(1-B.occ.at<float>(a) > B.occ.at<float>(a) ){
-				minB = 1-B.occ.at<float>(a);
-			}
-			else{
-				minB = B.occ.at<float>(a);
-			}
-
-			if( minA < minB ){ // do we think the same thing?
-				B.occ.at<float>(a) = A.occ.at<float>(a);
-			}
-			else{
-				A.occ.at<float>(a) = B.occ.at<float>(a);
-			}
-			*/
-		}
 	}
 }
 
