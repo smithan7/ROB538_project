@@ -24,7 +24,7 @@ class CostmapCoordination {
 public:
 	CostmapCoordination();
 	virtual ~CostmapCoordination();
-	void init( float obsThresh );
+	void init( float obsThresh, vector<float> constants );
 
 	float obsThresh;
 
@@ -36,6 +36,8 @@ public:
 	// market frontiers
 	Point marketFrontierPlanner(Costmap &costmap, Market &market);
 	void marketFrontiers( Costmap &costmap, Market &market);
+	vector<float> eConstants;
+	float eReward;
 
 	// useful functions
 	void findClosestFrontier(Costmap &costmap, Point cLoc, int &goalIndex, float &goalDist);

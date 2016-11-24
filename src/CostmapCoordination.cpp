@@ -9,8 +9,11 @@
 
 CostmapCoordination::CostmapCoordination(){}
 
-void CostmapCoordination::init(float obsThresh){
+void CostmapCoordination::init(float obsThresh, vector<float> constants){
 	this->obsThresh = obsThresh;
+	this->eConstants.push_back( constants[0] );
+	this->eConstants.push_back( constants[1] );
+	this->eReward = 0;
 }
 
 CostmapCoordination::~CostmapCoordination() {}
@@ -114,6 +117,8 @@ void CostmapCoordination::marketFrontiers(Costmap &costmap, Market &market){
 	// publish gLoc to the market and return it
 	market.gLocs[market.myIndex] = frontiers[minI].center;
 	market.costs[market.myIndex] = frontiers[minI].cost;
+
+	this->eReward = eConstants[0] * float(frontiers[minI].members.size()) - eConstants[1]*frontiers[minI].cost;
 }
 
 void CostmapCoordination::plotFrontiers(Costmap &costmap, vector<Point> &frontierCells){

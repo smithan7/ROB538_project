@@ -27,7 +27,7 @@ class Agent{
 public:
 
 	// agent stuff
-	Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents);
+	Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents, vector<float> constants);
 	void pickMyColor();
 	~Agent();
 	void showCellsPlot();
@@ -38,7 +38,11 @@ public:
 	float obsThresh;
 
 	Point localPoseSearch();
-	void plan(string method);
+	Point planExplore();
+	vector<float> kRoleSwapping;
+	Point planRelay();
+	void planRoleSwapping();
+	int role;
 	void act();
 
 	Market market;

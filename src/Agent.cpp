@@ -9,7 +9,7 @@ using namespace std;
 
 #include "Agent.h"
 
-Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents){
+Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents, vector<float> constants){
 	this->obsThresh = obsThresh;
 	this->comThresh = comThresh;
 	//this->myMap.createGraph(gMap, obsThresh, comThresh, gMap.gSpace);
@@ -22,7 +22,7 @@ Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThr
 	this->pickMyColor();
 
 	market.init(numAgents, myIndex );
-	costmapCoordination.init( obsThresh );
+	costmapCoordination.init( obsThresh, constants );
 }
 
 void Agent::communicate(Costmap &cIn, Market &mIn){
@@ -31,6 +31,12 @@ void Agent::communicate(Costmap &cIn, Market &mIn){
 }
 
 void Agent::act(){
+
+	// am I not in contact with the observer, via hops is ok
+	if( !this->market.contactWithObserver ){
+		//gLoc = oLoc;
+		//return;
+	}
 
 	if(cLoc == gLoc){
 		while(true){
@@ -55,27 +61,45 @@ void Agent::act(){
 	market.updateMarket(cLoc, gLoc);
 }
 
-void Agent::plan(string method){
+Point Agent::planRelay(){
 
-	// am I not in contact with the observer, via hops is ok
-	if( !this->market.contactWithObserver ){
-		//gLoc = oLoc;
-		//return;
+	// get high level travel graph
+
+	// evaluate poses on travel graph
+
+
+	return Point(-1,-1);
+
+}
+
+Point Agent::planExplore(){
+
+	Point eLoc = costmapCoordination.marketFrontierPlanner( costmap, market );
+	if( eLoc.x == -1 ){
+		eLoc = oLoc;
 	}
-
-	gLoc = costmapCoordination.marketFrontierPlanner( costmap, market );
-	if( gLoc.x == -1 ){
-		gLoc = oLoc;
-	}
-	return;
-
-
+	return eLoc;
 
 	// is my goal still a frontier
 	if(costmap.cells.at<short>(gLoc) != costmap.unknown || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
 		cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
 		gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
 		cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
+	}
+}
+
+void Agent::planRoleSwapping(){
+
+	Point eLoc = planExplore();
+	Point rLoc = planRelay();
+
+	if( costmapCoordination.eReward > -INFINITY ){
+		gLoc = eLoc;
+		role = 0;
+	}
+	else{
+		gLoc = rLoc;
+		role = 1;
 	}
 }
 

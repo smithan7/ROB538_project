@@ -79,14 +79,19 @@ int main(){
 		Observer humanObserver(sLoc[iterations_iter], numAgents, false, "operator");
 		Observer globalObserver(sLoc[iterations_iter], numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
 
+		vector<float> constants;
+		for(int i=0; i<4; i++){
+			constants.push_back(1);
+		}
+
 		vector<Agent> agents;
 		for(int i=0; i<numAgents; i++){
 			if( true ){ // different starting location?
-				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents));
+				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents, constants));
 				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents+i].x << " , " << sLoc[iterations_iter*numAgents+i].y << endl;
 			}
 			else{
-				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents));
+				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents, constants));
 				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents].x << " , " << sLoc[iterations_iter*numAgents].y << endl;
 			}
 		}
@@ -160,7 +165,7 @@ int main(){
 			cout << "Main::Into plan for one timestep" << endl;
 			// all agents plan for one timestep
 			for(int i=0; i<numAgents; i++){
-				agents[i].plan("greedy"); // includes updating internal cLoc
+				agents[i].planRoleSwapping(); // includes updating internal cLoc
 			}
 
 			// all agents act for one timestep
