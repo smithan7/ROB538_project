@@ -64,6 +64,7 @@ void Agent::act(){
 Point Agent::planRelay(){
 
 	// get high level travel graph
+	graphCoordination.thinGraph.createThinGraph(costmap, 1, 1);
 
 	// evaluate poses on travel graph
 
