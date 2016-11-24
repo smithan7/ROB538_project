@@ -16,11 +16,13 @@ Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThr
 
 	cLoc= sLoc;
 	gLoc = sLoc;
+	oLoc = sLoc;
 
 	this->myIndex = myIndex;
 	this->pickMyColor();
 
 	market.init(numAgents, myIndex );
+	costmapCoordination.init( obsThresh );
 }
 
 void Agent::communicate(Costmap &cIn, Market &mIn){
@@ -50,39 +52,31 @@ void Agent::act(){
 	//cout << "Agent::act::out" << endl;
 
 	history.push_back(cLoc);
-	market.updateMarket(cLoc);
+	market.updateMarket(cLoc, gLoc);
 }
 
+void Agent::plan(string method){
 
-void Agent::soloPlan(string method, int timeLeft){
-
-	if(method.compare("greedy") == 0){
-		if(costmap.cells.at<short>(gLoc) != costmap.infFree || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
-			cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
-			gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
-			cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
-		}
+	// am I not in contact with the observer, via hops is ok
+	if( !this->market.contactWithObserver ){
+		//gLoc = oLoc;
+		//return;
 	}
-	else if(method.compare("select") == 0){
 
-		float w[3] = {1, 1, 0.5}; // explore, search, map
-		float e[2] = {0.5, 5}; // dominated, breaches
-		float spread = 0.5; // spread rate
-		costmap.getRewardMat(w, e, spread);
-		costmap.displayThermalMat( costmap.reward );
-
-		//gLoc = costmapPlanning.explorePlanner(costmap, cLoc);
-		//gLoc = costmapPlanning.searchPlanner(costmap, cLoc);
-		gLoc = costmapPlanning.mappingPlanner(costmap, cLoc);
-
-		if(gLoc.x < 0 || gLoc.y < 0){
-			cerr << "greedy" << endl;
-			if(costmap.cells.at<short>(gLoc) != costmap.infFree || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
-				gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
-			}
-		}
+	gLoc = costmapCoordination.marketFrontierPlanner( costmap, market );
+	if( gLoc.x == -1 ){
+		gLoc = oLoc;
 	}
-	//cout << "out of solo plan" << endl;
+	return;
+
+
+
+	// is my goal still a frontier
+	if(costmap.cells.at<short>(gLoc) != costmap.unknown || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
+		cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
+		gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
+		cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
+	}
 }
 
 

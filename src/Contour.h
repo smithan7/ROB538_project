@@ -45,7 +45,6 @@ public:
 	vector<float> length;
 
 	// exploration stuff
-	void getDominatedStatus( Costmap &costmap );
 	void fillContourInCostmap( Costmap &costmap, int val );
 	void getNbrsWithValue(Costmap &costmap, int value);
 	vector<Point> nbrs; // [k][x,y,nbr value];

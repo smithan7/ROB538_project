@@ -27,25 +27,17 @@ public:
 	Frontier(vector<Point> members);
 	virtual ~Frontier();
 
-	float orient[2]; // unit vector descirbing orientation
-	Point centroid; // [x/y]
 	Point center; // [x,y]
-	Point projection; // [x/y]
-	float projectionDistance;
-	int area; // area behind this Frontier
 	float reward; // reward for this Frontier
 	float cost; // cost of travel to frontier for owning agent
+	float value; // reward - cost
 
-	vector<Point> obstacles;
-	vector<vector<Point> > obsClusters;
+	bool editFlag; // for clustering
 
 	vector<Point> members; // [list][x/y]
-	bool editFlag;
 
 	void getCentroid(Costmap &costmap);
 	void getCenter();
-	void getProjection();
-	void getOrientation(Costmap &costMap);
 
 
 

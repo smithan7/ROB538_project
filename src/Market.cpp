@@ -7,25 +7,32 @@
 
 #include "Market.h"
 
+
 Market::Market(){}
 
 void Market::init(int nAgents, int myIndex) {
 	for(int i=0; i<nAgents; i++){
 		Point a(0,0);
 		cLocs.push_back(a);
-		time.push_back(0);
+		gLocs.push_back(a);
+		times.push_back(0);
+		costs.push_back(0);
 	}
 	this->myIndex = myIndex;
+	contactWithObserver = false;
 }
 
 Market::~Market() {}
 
 void Market::shareMarket( Market &vis ){
-
-	for( size_t i=0; i<this->cLocs.size(); i++){
-		if(this->time[i] >= vis.time[i]){
-			this->cLocs[i] = vis.cLocs[i];
-			this->time[i] = vis.time[i];
+	for( size_t i=0; i<this->cLocs.size(); i++){ // for all agents
+		if(this->times[i] <= vis.times[i] && i != vis.myIndex){ // have i seen them sooner than they have?
+			// yes, give them all my info on them
+			vis.cLocs[i] = this->cLocs[i];
+			vis.gLocs[i] = this->gLocs[i];
+			vis.cLocs[i] = this->cLocs[i];
+			vis.costs[i] = this->costs[i];
+			vis.times[i] = this->times[i];
 		}
 	}
 }
@@ -41,25 +48,60 @@ void Market::printMarket(){
 	cout << endl;
 
 	cout << "time: ";
-	for( size_t i=0; i<this->time.size(); i++){
+	for( size_t i=0; i<this->times.size(); i++){
 		cout << time[i];
-		if(i+1 < time.size() ){
+		if(i+1 < times.size() ){
 			cout << ", ";
 		}
 	}
 	cout << endl;
 }
 
-void Market::updateMarket( Point cLoc ){
-	for( size_t i=0; i<this->cLocs.size(); i++){
-		time[i]++;
-	}
+void Market::updateMarket( Point cLoc, Point gLoc ){
+	this->iterateTime();
+
 	cLocs[myIndex] = cLoc;
-	time[myIndex] = 0;
+	gLocs[myIndex] = gLoc;
+	times[myIndex] = 0;
 }
 
 void Market::iterateTime(){
 	for( size_t i=0; i<this->cLocs.size(); i++){
-		time[i]++;
+		times[i]++;
 	}
 }
+
+/*
+vector<float> nnGetAgentVals(){
+	vector<float> frntVals;
+	for(int i=0; i<4; i++){
+		frntVals.push_back(0);
+	}
+
+	for(size_t i=0; i<cells.cols; i++){
+		for(size_t j=0; j<cells.rows; j++){
+			Point t(i,j);
+			if(cells.at<short>(t) == infFree){
+				float distSq = distP2PSq(t, cLoc);
+
+				int quad = getQuad( cLoc, t );
+				frntVals[quad] += 1 / distSq;
+			}
+		}
+	}
+
+	return agentVals;
+}
+vector<float> nnGetObserverVals(){
+
+	vector<float> frntVals;
+	for(int i=0; i<4; i++){
+		frntVals.push_back(0);
+	}
+
+	for(size_t i=0; i<cells.cols; i++){
+
+	}
+	return observerVals;
+}
+*/

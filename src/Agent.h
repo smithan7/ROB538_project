@@ -18,6 +18,8 @@
 #include "CostmapCoordination.h" // includes - world.h, frontier.h
 #include "CostmapPlanning.h" // includes - world.h, frontier.h
 #include "Market.h" // for graphCoordination
+#include "Graph.h" // for planning over
+#include "GraphCoordination.h"
 
 using namespace std;
 
@@ -35,15 +37,14 @@ public:
 	float comThresh;
 	float obsThresh;
 
-	// working
-	void soloPlan(string method, int timeLeft);
-	void coordinatedPlan(string method, int timeLeft, vector<Agent> &agents);
-
+	Point localPoseSearch();
+	void plan(string method);
 	void act();
 
 	Market market;
+	Graph poseGraph, comGraph;
 
-	Point cLoc, gLoc; // for map
+	Point cLoc, gLoc, oLoc; // for map
 	vector<Point> myPath;
 	vector<Point> history;
 
@@ -51,6 +52,7 @@ public:
 	Costmap costmap;
 	CostmapCoordination costmapCoordination;
 	CostmapPlanning costmapPlanning;
+	GraphCoordination graphCoordination;
 
 	int marketNodeSelect(World &gMap);
 	void greedyFrontiers();

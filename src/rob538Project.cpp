@@ -36,18 +36,18 @@ int main(){
 	srand( time(NULL) );
 	bool videoFlag = false;
 
-	int numAgents = 2;
+	int numAgents = 10;
 	int numIterations = 1;
 
-	int gSpace = 3;
-	float obsThresh = 10;
-	float comThresh = 100;
-	int maxTime = 50;
+	int gSpace = 4;
+	float obsThresh = 40;
+	float comThresh = 80;
+	int maxTime = 500;
 
 	vector<string> fName;
 	//fName.push_back("mineMap");
-	fName.push_back("test6");
-	//fName.push_back("slamMap");
+	//fName.push_back("test6");
+	fName.push_back("slamMap");
 	//fName.push_back("tunnelTest");
 
 	int map_iter = 0;
@@ -81,8 +81,8 @@ int main(){
 
 		vector<Agent> agents;
 		for(int i=0; i<numAgents; i++){
-			if( true ){
-				agents.push_back(Agent(sLoc[iterations_iter*numAgents+i], i, world, obsThresh, comThresh, numAgents));
+			if( true ){ // different starting location?
+				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents));
 				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents+i].x << " , " << sLoc[iterations_iter*numAgents+i].y << endl;
 			}
 			else{
@@ -98,7 +98,7 @@ int main(){
 		VideoWriter slamVideo;
 		if(videoFlag){
 			//Size frameSize( static_cast<int>(world.costmap.cells.cols, world.costmap.cells.rows) );
-			//slamVideo.open("multiAgentInference.avi",CV_FOURCC('M','J','P','G'), 30, frameSize, true );
+			//slamVideo.open("multiAgentInferen ce.avi",CV_FOURCC('M','J','P','G'), 30, frameSize, true );
 			cout << "Main::Videos started" << endl;
 		}
 
@@ -106,42 +106,48 @@ int main(){
 		waitKey(1);
 		cout << "Main::Here we go!" << endl;
 
+		world.observe(humanObserver.cLoc, humanObserver.costmap);
+
 		int timeSteps = -1;
 		float percentObserved = 0;
 		while(timeSteps < maxTime-1 && percentObserved < 0.99){
 			cout << "Main::Starting while loop" << endl;
 			timeSteps++;
+			waitKey(1);
 
 			// all agents observe
 			for(int i=0; i<numAgents; i++){
 				world.observe(agents[i].cLoc, agents[i].costmap);
-				agents[i].costmap.findFrontiers();
-				agents[i].market.updateMarket(agents[i].cLoc);
+				agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
 
 				world.observe(agents[i].cLoc, globalObserver.costmap);
 				globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
+				globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
 			}
-			world.observe(humanObserver.cLoc, humanObserver.costmap);
+
 			cout << "Main::made observations" << endl;
 
-			// all agents communicate
-			for(int i=0; i<numAgents; i++){
-				for(int j=i+1; j<numAgents; j++){
-					if(i!=j){
-						if(world.commoCheck(agents[i].cLoc, agents[j].cLoc, comThresh)){
-							agents[i].communicate(agents[j].costmap, agents[j].market);
-							agents[j].communicate(agents[i].costmap, agents[i].market);
+			for(int commHops = 0; commHops < numAgents; commHops++){
+				// all agents communicate
+				for(int i=0; i<numAgents; i++){
+					// all agents communicate with global observer, always
+					agents[i].communicate( globalObserver.costmap, globalObserver.market );
+					// all agents communicate with humanObserver, if possible
+					if( world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh) ){
+						agents[i].communicate( humanObserver.costmap, humanObserver.market );
+						humanObserver.communicate( agents[i].costmap, agents[i].market );
+					}
+					// all agents communicate with each other if possible
+					for(int j=0; j<numAgents; j++){
+						if(i!=j){
+							if(world.commoCheck(agents[i].cLoc, agents[j].cLoc, comThresh)){
+								agents[i].communicate( agents[j].costmap, agents[j].market );
+								//agents[j].communicate( agents[i].costmap, agents[i].market );
+							}
 						}
 					}
 				}
-				// all agents communicate with humanObserver, if possible
-				if(world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh)){
-					agents[i].communicate(humanObserver.costmap, humanObserver.market);
-					humanObserver.communicate(agents[i].costmap, agents[i].market);
-				}
 			}
-
-			humanObserver.market.printMarket();
 			cout << "Main::Out of communicate with other agents" << endl;
 
 
@@ -154,7 +160,7 @@ int main(){
 			cout << "Main::Into plan for one timestep" << endl;
 			// all agents plan for one timestep
 			for(int i=0; i<numAgents; i++){
-				agents[i].soloPlan("greedy", maxTime - timeSteps); // includes updating internal cLoc
+				agents[i].plan("greedy"); // includes updating internal cLoc
 			}
 
 			// all agents act for one timestep
@@ -224,26 +230,28 @@ vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point o
 			for(size_t a=0; a<agents.size(); a++){
 				if(a != na){ // exclude diff agent
 					world.observe(agents[a].cLoc, agents[a].costmap);
-					agents[a].market.updateMarket(agents[a].cLoc);
+					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
 				}
 			}
 			world.observe(tO.cLoc, tO.costmap);
 
 			// all agents communicate
-			for(int a=0; a<agents.size(); a++){
-				if(a != na){ // exclude diff agent
-					for(int b=a+1; b<agents.size(); b++){
-						if(a!=b && b!=na){
-							if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
-								agents[a].communicate(agents[b].costmap, agents[b].market);
-								agents[b].communicate(agents[a].costmap, agents[a].market);
+			for(size_t hops = 0; hops < agents.size(); hops++){
+				for(size_t a=0; a<agents.size(); a++){
+					// all agents communicate with humanObserver, if possible
+					if(a != na){ // exclude diff agent
+						if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
+							agents[a].communicate(tO.costmap, tO.market);
+							tO.communicate(agents[a].costmap, agents[a].market);
+						}
+						for(size_t b=a+1; b<agents.size(); b++){
+							if(a!=b && b!=na){
+								if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
+									agents[a].communicate(agents[b].costmap, agents[b].market);
+									agents[b].communicate(agents[a].costmap, agents[a].market);
+								}
 							}
 						}
-					}
-					// all agents communicate with humanObserver, if possible
-					if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
-						agents[a].communicate(tO.costmap, tO.market);
-						tO.communicate(agents[a].costmap, agents[a].market);
 					}
 				}
 			} // end commo

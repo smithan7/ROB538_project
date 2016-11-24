@@ -16,6 +16,7 @@
 
 #include "World.h" // includes - costmap.h
 #include "Frontier.h"
+#include "Market.h"
 
 using namespace std;
 
@@ -23,6 +24,9 @@ class CostmapCoordination {
 public:
 	CostmapCoordination();
 	virtual ~CostmapCoordination();
+	void init( float obsThresh );
+
+	float obsThresh;
 
 	// Frontiers
 	vector<Frontier> frontiers; // graphs frontiers of item
@@ -30,22 +34,13 @@ public:
 	void clusterFrontiers(vector<Point> frntList, Costmap &costmap); // cluster Frontiers into groups
 
 	// market frontiers
-	void initializeMarket(int nAgents);
-	void placeMyOrder(Costmap &costmap, Point cLoc, int myIndex);
-	Point marketFrontiers(Costmap & costmap, Point cLoc, int myIndex);
-
-	vector<float> standingBids; // this is nAgents long
-	vector<Point> goalLocations; // this is nAgents long
+	Point marketFrontierPlanner(Costmap &costmap, Market &market);
+	void marketFrontiers( Costmap &costmap, Market &market);
 
 	// useful functions
 	void findClosestFrontier(Costmap &costmap, Point cLoc, int &goalIndex, float &goalDist);
 	void plotFrontiers(Costmap &costmap, vector<Point> &frontierCells);
 
-	/*
-	vector< vector<int> > kMeansClusteringTravel(int numClusters, Costmap &costmap); // cluster using travel dist
-	vector< vector<int> > kMeansClusteringEuclid(int numClusters, Costmap &costmap); // cluster using euclidian
-	vector<vector<int> > centralMarket(Costmap &costmap, vector<vector<int> > cLoc);
-	*/
 };
 
 #endif /* COSTMAPCOORDINATION_H_ */

@@ -26,13 +26,23 @@ public:
 	Market();
 	void init(int nAgents, int myIndex);
 	void shareMarket( Market &in );
-	void updateMarket( Point cLoc );
+	void updateMarket( Point cLoc, Point gLoc );
 	void iterateTime();
 	void printMarket();
+
+	vector<float> nnGetAgentVals();
+	vector<float> nnGetObserverVals();
+
 	virtual ~Market();
 
 	vector<Point> cLocs;
-	vector<int> time;
+	vector<Point> gLocs;
+	vector<float> costs;
+	vector<float> values;
+	vector<float> rewards;
+
+	vector<int> times;
+	bool contactWithObserver;
 
 	int myIndex;
 

@@ -88,6 +88,8 @@ void Observer::showCellsPlot(){
 void Observer::addAgentsToCostmapPlot(){
 	for(int i=0; i<nAgents; i++){
 		circle(costmap.displayPlot,market.cLocs[i],2, agentColors[i],-1, 8);
+		circle(costmap.displayPlot, market.gLocs[i], 2, Scalar(0,0,0), -1, 8);
+		circle(costmap.displayPlot, market.gLocs[i], 1, agentColors[i], -1, 8);
 	}
 }
 
