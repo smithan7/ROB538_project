@@ -79,13 +79,6 @@ Point Agent::planExplore(){
 		eLoc = oLoc;
 	}
 	return eLoc;
-
-	// is my goal still a frontier
-	if(costmap.cells.at<short>(gLoc) != costmap.unknown || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
-		cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
-		gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
-		cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
-	}
 }
 
 void Agent::planRoleSwapping(){

@@ -16,7 +16,6 @@
 
 #include "World.h" // includes - costmap.h
 #include "CostmapCoordination.h" // includes - world.h, frontier.h
-#include "CostmapPlanning.h" // includes - world.h, frontier.h
 #include "Market.h" // for graphCoordination
 #include "Graph.h" // for planning over
 #include "GraphCoordination.h"
@@ -55,7 +54,6 @@ public:
 	// costmap class stuff
 	Costmap costmap;
 	CostmapCoordination costmapCoordination;
-	CostmapPlanning costmapPlanning;
 	GraphCoordination graphCoordination;
 
 	int marketNodeSelect(World &gMap);

@@ -8,7 +8,6 @@ CPP_SRCS += \
 ../src/Contour.cpp \
 ../src/Costmap.cpp \
 ../src/CostmapCoordination.cpp \
-../src/CostmapPlanning.cpp \
 ../src/Frontier.cpp \
 ../src/Graph.cpp \
 ../src/GraphCoordination.cpp \
@@ -22,7 +21,6 @@ OBJS += \
 ./src/Contour.o \
 ./src/Costmap.o \
 ./src/CostmapCoordination.o \
-./src/CostmapPlanning.o \
 ./src/Frontier.o \
 ./src/Graph.o \
 ./src/GraphCoordination.o \
@@ -36,7 +34,6 @@ CPP_DEPS += \
 ./src/Contour.d \
 ./src/Costmap.d \
 ./src/CostmapCoordination.d \
-./src/CostmapPlanning.d \
 ./src/Frontier.d \
 ./src/Graph.d \
 ./src/GraphCoordination.d \
