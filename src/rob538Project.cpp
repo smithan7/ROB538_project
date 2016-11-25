@@ -42,7 +42,7 @@ int main(){
 	int gSpace = 2;
 	float obsThresh = 40;
 	float comThresh = 80;
-	int maxTime = 100;
+	int maxTime = 50;
 
 	vector<string> fName;
 	//fName.push_back("mineMap");
@@ -85,10 +85,10 @@ int main(){
 
 			vector<float> constants;
 			for(int j=0; j<5; j++){
-				constants.push_back(1);//float(rand() % 1000) / 100 - 50);
+				constants.push_back(float(rand() % 10000) / 1000 - 50); // rand -50 -> 50
 			}
 
-			if(i < 2){ // make a relay
+			if(i < 0){ // make a relay
 				constants.clear();
 				constants.push_back(-1); // frontier cells
 				constants.push_back(1000); // frontier travel cost
@@ -97,7 +97,7 @@ int main(){
 				constants.push_back(1); // dExplorers as relay
 				constants.push_back(1); // relay travel cost
 			}
-			else{ // make an explorer
+			else if(i < 0){ // make an explorer
 				constants.clear();
 				constants.push_back(100); // frontier cells
 				constants.push_back(1); // frontier travel cost
@@ -257,7 +257,7 @@ vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point o
 
 			// all agents observe
 			for(size_t a=0; a<agents.size(); a++){
-				if(a != na && agents[a].roleHistory[t] == 'e'){ // exclude diff agent
+				if(a != na && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
 					world.observe(agents[a].cLoc, agents[a].costmap);
 					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
 				}
