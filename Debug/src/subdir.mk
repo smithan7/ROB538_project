@@ -5,7 +5,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/Agent.cpp \
-../src/Contour.cpp \
 ../src/Costmap.cpp \
 ../src/CostmapCoordination.cpp \
 ../src/Frontier.cpp \
@@ -18,7 +17,6 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/Agent.o \
-./src/Contour.o \
 ./src/Costmap.o \
 ./src/CostmapCoordination.o \
 ./src/Frontier.o \
@@ -31,7 +29,6 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/Agent.d \
-./src/Contour.d \
 ./src/Costmap.d \
 ./src/CostmapCoordination.d \
 ./src/Frontier.d \
