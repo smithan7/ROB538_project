@@ -196,59 +196,6 @@ void getMatWithValue(Costmap &costmap, Mat &mat, int value){
 	}
 }
 
-void Contour::getDominatedStatus(Costmap &costmap){
-
-	Mat cMat = Mat::zeros( costmap.cells.size(), CV_8UC1 );
-
-	for(int i=0; i<costmap.cells.cols; i++){
-		for(int j=0; j<costmap.cells.rows; j++){
-			Point a(i,j);
-			if( costmap.cells.at<short>(a) == costmap.infFree || costmap.cells.at<short>(a) == costmap.unknown){
-				cMat.at<uchar>(i,j) = 255;
-			}
-		}
-	}
-
-	/*
-	namedWindow("infFree and Unknown", WINDOW_NORMAL);
-	imshow("infFree and Unknown", cMat);
-	waitKey(1);
-	*/
-
-	Mat tMat = Mat::zeros(cMat.size(), CV_8UC1);
-	vector<vector<Point> > pts;
-	pts.push_back( points );
-	drawContours(tMat, pts, 0, Scalar(255), 5, 8); // inflate wall of contour for set width
-	drawContours(tMat, pts, 0, Scalar(0), -1, 8); // get rid of internal inflation
-	drawContours(tMat, pts, 0, Scalar(0), 1, 8); // get rid of countour boundary
-
-	/*
-	namedWindow("inflated contour", WINDOW_NORMAL);
-	imshow("inflated contour", tMat);
-	waitKey(1);
-	*/
-
-	bitwise_and(tMat, cMat, tMat);
-
-	/*
-	namedWindow("bitwise and", WINDOW_NORMAL);
-	imshow("bitwise and", tMat);
-	waitKey(1);
-	*/
-
-	int reward = getMatReward( tMat );
-	if( reward == 0){
-		dominated = true;
-	}
-	else{
-		dominated = false;
-	}
-
-	/*
-	cout << "dominated: " << dominated << endl;
-	waitKey(0);
-	*/
-}
 
 vector<Point> Contour::getContourExitPoints(int val){
 	vector<Point> exits;

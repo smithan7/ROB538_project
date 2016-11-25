@@ -28,62 +28,37 @@ public:
 	virtual ~Costmap();
 
 	void prettyPrintCostmap();
-	void findFrontiers();
+	//void findFrontiers();
+	void shareCostmap(Costmap &b);
 
 	// useful stuff
-	int obsFree, infFree, domFree, unknown, obsWall, infWall, inflatedWall;
-	// 1 = free space // 2 = inferred free space // 3 = domFree
+	int obsFree, frontier, unknown, obsWall;
+	// 1 = free space // 2 = frontier
 	// 101 = unknown
-	// 201 = wall // 202 = inferred wall // 203 = inflated wall
-	Vec3b cObsFree, cInfFree, cObsWall, cInfWall, cUnknown, cError;
+	// 201 = wall
+	Vec3b cObsFree, cFrontier, cUnknown, cObsWall;
 
 	Mat cells;
-	Mat euclidDist; // array of distances
-	Mat occ; // floats, holds 0-1 of occupancy of a cell; 0-0.2 = obsFree, 0.2-0.35 = infFree, 0.35-0.65 = unknown, 0.65-0.8=infWall, 0.8-1.0 = obsWall
-	// use inference to seed the occGrid and also for mapping, track by 0.1 per observation with p(0.01) of a misreading;
-	Mat searchReward;
-	Mat reward;
+	Mat exploreReward;
 
 	vector<Point> cellUpdates;
-	vector<Point> hullBreaches;
+	vector<Point> viewPerim;
 
-	void getRewardMat(float w[3], float e[2], float spread);
-	void displayThermalMat(Mat &mat);
+	void getExploreRewardMat(float frontierReward, float unknownReward);
+	void displayExploreRewardHeatMat(Mat &mat);
+	void simulateObservation(Point pose, Mat &resultingView);
+	float getPoseReward(Mat &mat);
+	bool visibleLineCheck(Point pose, Point target);
 
-	void spreadSearchArea(float growthRate);
-	void displaySearchReward();
-
-	float getEuclidianDistance(Point a, Point b);
-	void getDistGraph();
-
-	float cumulativeAStarDist(Point sLoc, Point gLoc, Mat &cSet, vector<Point> &oSet, Mat &fScore, Mat &gScore);
+	float getEuclidianDistance( Point a, Point b);
 	float aStarDist(Point sLoc, Point gLoc);
 	vector<Point> aStarPath(Point sLoc, Point gLoc);
 
-	// TODO only update portion that needs it
-	//void updateCostmap(vector<vector<int> > cells, vector<int> value);
 
 	Mat displayPlot;
 	void buildCellsPlot(); // build nice display plot
-	void buildOccPlot(); // build nice display plot
 	void showCostmapPlot(int index); // show nice display plot and number it
 	void addAgentToPlot(Scalar color, vector<Point> myPath, Point cLoc);
-
-	Mat createCostMat(); // Largely used for inference
-	vector<Point> getImagePointsAt(Mat &image, int intensity); // convert mat to vector of points
-
-	/*retired functions
-
-	float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
-	float getPercentDominated(Costmap &globalCostmap, Costmap &workingCostmap);
-	float getPercentObservedAndInferred(Costmap &globalCostmap, Costmap &workingCostmap);
-	float getPercentObservedAndInferredCorrectly(Costmap &globalCostmap, Costmap &workingCostmap);
-	float getPercentInferredCorrectly(Costmap &globalCostmap, Costmap &workingCostmap);
-	float getPercentInferredWrongly(Costmap &globalCostmap, Costmap &workingCostmap);
-
-	 */
-
-
 };
 
 #endif /* COSTMAP_H_ */

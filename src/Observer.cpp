@@ -5,27 +5,95 @@
  *      Author: andy
  */
 
+
 #include "Observer.h"
 
-Observer::Observer(Point cLoc){
+Observer::Observer(Point cLoc, int nAgents, bool global, String name){
 	this->cLoc = cLoc;
+	this->nAgents = nAgents;
+	globalObserver = global;
+	this->name = name;
+
+	for(int i=0; i<nAgents; i++){
+		agentColors.push_back( setAgentColor(i) );
+	}
+	market.init(nAgents, -1);
 }
 
 Observer::~Observer(){}
 
-void Observer::showCellsPlot(vector<Agent> agents){
-	this->costmap.buildCellsPlot();
-	this->addAgentsToCostmapPlot(agents, this->costmap.displayPlot);
-	namedWindow("Observer::costMat", WINDOW_NORMAL);
-	imshow("Observer::costMat", this->costmap.displayPlot);
+void Observer::communicate(Costmap &cIn, Market &mIn){
+	this->costmap.shareCostmap(cIn);
+	this->market.shareMarket( mIn );
 }
 
-void Observer::addAgentsToCostmapPlot(vector<Agent> agents, Mat &displayPlot){
-	for(size_t i=0; i<agents.size(); i++){
-		Scalar black(0,0,0);
-		circle(displayPlot,agents[i].cLoc,2, agents[i].myColor,-1, 8);
-		circle(displayPlot,agents[i].gLoc,2, black,-1, 8);
-		circle(displayPlot,agents[i].gLoc,1, agents[i].myColor,-1, 8);
+Scalar Observer::setAgentColor(int index){
+	Scalar color(0,0,0);
+
+	if(index == 0){
+		color[0] = 255;
+	}
+	else if(index == 1){
+		color[1] = 255;
+	}
+	else if(index == 2){
+		color[2] = 255;
+	}
+	else if(index == 3){
+		color[0] = 255;
+		color[1] = 153;
+		color[2] = 51;
+	}
+	else if(index == 4){
+		color[0] = 255;
+		color[1] = 255;
+		color[2] = 51;
+	}
+	else if(index == 5){
+		color[0] = 255;
+		color[1] = 51;
+		color[2] = 255;
+	}
+	else if(index == 6){
+		color[0] = 51;
+		color[1] = 255;
+		color[2] = 255;
+	}
+	else if(index == 7){
+		color[0] = 153;
+		color[1] = 255;
+		color[2] = 51;
+	}
+	else if(index == 8){
+		color[0] = 255;
+		color[1] = 255;
+		color[2] = 255;
+	}
+	else if(index == 9){
+		// white
+	}
+
+	return color;
+}
+
+void Observer::showCellsPlot(){
+	costmap.buildCellsPlot();
+	addSelfToCostmapPlot();
+	addAgentsToCostmapPlot();
+
+	namedWindow(name, WINDOW_NORMAL);
+	imshow(name, costmap.displayPlot);
+	waitKey(1);
+}
+
+void Observer::addAgentsToCostmapPlot(){
+	for(int i=0; i<nAgents; i++){
+		circle(costmap.displayPlot,market.cLocs[i],2, agentColors[i],-1, 8);
+		circle(costmap.displayPlot, market.gLocs[i], 2, Scalar(0,0,0), -1, 8);
+		circle(costmap.displayPlot, market.gLocs[i], 1, agentColors[i], -1, 8);
 	}
 }
 
+void Observer::addSelfToCostmapPlot(){
+	rectangle( costmap.displayPlot, Point(cLoc.x-2, cLoc.y-2), Point(cLoc.x+2, cLoc.y+2), Scalar(0,165,255), -1, 8);
+}

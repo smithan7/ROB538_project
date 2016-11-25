@@ -10,6 +10,8 @@ CPP_SRCS += \
 ../src/CostmapCoordination.cpp \
 ../src/CostmapPlanning.cpp \
 ../src/Frontier.cpp \
+../src/Graph.cpp \
+../src/GraphCoordination.cpp \
 ../src/Market.cpp \
 ../src/Observer.cpp \
 ../src/World.cpp \
@@ -22,6 +24,8 @@ OBJS += \
 ./src/CostmapCoordination.o \
 ./src/CostmapPlanning.o \
 ./src/Frontier.o \
+./src/Graph.o \
+./src/GraphCoordination.o \
 ./src/Market.o \
 ./src/Observer.o \
 ./src/World.o \
@@ -34,6 +38,8 @@ CPP_DEPS += \
 ./src/CostmapCoordination.d \
 ./src/CostmapPlanning.d \
 ./src/Frontier.d \
+./src/Graph.d \
+./src/GraphCoordination.d \
 ./src/Market.d \
 ./src/Observer.d \
 ./src/World.d \

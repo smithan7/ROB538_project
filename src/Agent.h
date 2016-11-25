@@ -18,6 +18,8 @@
 #include "CostmapCoordination.h" // includes - world.h, frontier.h
 #include "CostmapPlanning.h" // includes - world.h, frontier.h
 #include "Market.h" // for graphCoordination
+#include "Graph.h" // for planning over
+#include "GraphCoordination.h"
 
 using namespace std;
 
@@ -25,32 +27,36 @@ class Agent{
 public:
 
 	// agent stuff
-	Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents);
+	Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents, vector<float> constants);
 	void pickMyColor();
 	~Agent();
-	void shareCostmap(Costmap &A, Costmap &B);
 	void showCellsPlot();
-	void shareGoals(vector<int> inG, int index);
+	void communicate(Costmap &cIn, Market &mIn);
 	int myIndex;
 	Scalar myColor;
 	float comThresh;
 	float obsThresh;
 
-	// working
-	void soloPlan(string method, int timeLeft);
-	void coordinatedPlan(string method, int timeLeft, vector<Agent> &agents);
-
+	Point localPoseSearch();
+	Point planExplore();
+	vector<float> kRoleSwapping;
+	Point planRelay();
+	void planRoleSwapping();
+	int role;
 	void act();
 
 	Market market;
+	Graph poseGraph, comGraph;
 
-	Point cLoc, gLoc; // for map
-	vector<Point> myPath, agentLocs;
+	Point cLoc, gLoc, oLoc; // for map
+	vector<Point> myPath;
+	vector<Point> history;
 
 	// costmap class stuff
 	Costmap costmap;
 	CostmapCoordination costmapCoordination;
 	CostmapPlanning costmapPlanning;
+	GraphCoordination graphCoordination;
 
 	int marketNodeSelect(World &gMap);
 	void greedyFrontiers();

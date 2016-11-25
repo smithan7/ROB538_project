@@ -9,21 +9,28 @@
 #define OBSERVER_H_
 
 #include "Costmap.h"
-#include "Agent.h"
+#include "Market.h"
 
 class Observer {
 public:
-	Observer(Point cLoc);
+	Observer(Point cLoc, int nAgents, bool global, String name);
 	virtual ~Observer();
+	void communicate(Costmap &cIn, Market &mIn);
+
+	bool globalObserver;
+	String name;
 
 	Point cLoc;
+	int nAgents;
+	vector<Scalar> agentColors;
 
 	Costmap costmap;
-	void showCellsPlot(vector<Agent> agents);
-	void addAgentsToCostmapPlot(vector<Agent> agents, Mat &displayPlot);
+	Market market;
 
-	vector<vector<int> > agentLocList;
-
+	void showCellsPlot();
+	void addAgentsToCostmapPlot();
+	Scalar setAgentColor(int i);
+	void addSelfToCostmapPlot();
 };
 
 

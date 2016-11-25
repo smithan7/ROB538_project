@@ -29,26 +29,29 @@ World::World(string fName, int resolution, float obsThresh, float comThresh){
 
 	initializeMaps(image, resolution);
 	cout << "world::costmap.cells.size(): " << costmap.cells.cols << " x " << costmap.cells.rows << endl;
-	costmap.getDistGraph();
 	cout << "World::Finished building " << fName << ".yml" << endl;
 }
 
-bool World::communicationPossible(Point a, Point b){
-	Mat ta = Mat::zeros(costmap.cells.size(), CV_8UC1);
+bool World::commoCheck(Point aLoc, Point bLoc, float comThresh){
 
-	float dist = sqrt(pow(a.x-b.x,2) + pow(a.y-b.y,2));
-	if( dist > this->commThresh){
+	if( pow(aLoc.x-bLoc.x,2)+pow(aLoc.y-bLoc.y,2) > pow(comThresh,2)){
 		return false;
 	}
 
-	LineIterator it(ta, a, b, 4, false);
+	Mat ta = Mat::zeros(costmap.cells.size(), CV_8UC1);
+	LineIterator it(ta, aLoc, bLoc, 4, false);
 	for(int i=0; i<it.count; i++, ++it){
 		Point pp  = it.pos();
-		if(costmap.cells.at<short>(pp) > costmap.unknown){
+		//circle(ta, pp, 1, Scalar(255), -1, 8);
+		if(pp.x >= costmap.cells.cols || pp.y >= costmap.cells.rows || costmap.cells.at<short>(pp) > costmap.obsFree){
+			return false;
+		}
+		else if(costmap.cells.at<short>(pp) != costmap.obsFree){
 			return false;
 		}
 	}
 	return true;
+
 }
 
 void World::initializeMaps(Mat &imgGray, int resolution){
@@ -93,8 +96,6 @@ void World::observe(Point cLoc, Costmap &costmap){
 	// if needed, initialize costmap
 	if(costmap.cells.empty()){
 		costmap.cells = Mat::ones(this->costmap.cells.size(), CV_16S) * costmap.unknown;
-		costmap.occ = Mat::ones(this->costmap.cells.size(), CV_32F) * 0.5;
-		costmap.euclidDist = this->costmap.euclidDist;
 	}
 
 	costmap.cellUpdates.clear();
@@ -105,7 +106,6 @@ void World::observe(Point cLoc, Costmap &costmap){
 	float pFree = 0.49;
 	for(size_t i=0; i<costmap.cellUpdates.size(); i++){
 		Point c = costmap.cellUpdates[i];
-		costmap.occ.at<float>(c) = costmap.occ.at<float>(c)*pFree / (costmap.occ.at<float>(c)*pFree + (1-costmap.occ.at<float>(c))*(1-pFree) ); // this cell is always free and being updated
 		if(costmap.cells.at<short>(c) != costmap.obsFree){
 			costmap.cells.at<short>(c) = costmap.obsFree;
 			for(int k=c.x-1; k<c.x+2; k++){
@@ -113,7 +113,6 @@ void World::observe(Point cLoc, Costmap &costmap){
 					Point a(k,l);
 					if(this->costmap.cells.at<short>(a) == this->costmap.obsWall){ // are any of my nbrs visible?
 						costmap.cells.at<short>(a) = costmap.obsWall; // set my cost
-						costmap.occ.at<float>(a) = costmap.occ.at<float>(a)*pOcc / (costmap.occ.at<float>(a)*pOcc + (1-costmap.occ.at<float>(a))*(1-pOcc) ); // nbr cell that is a wall
 					}
 				}
 			}
@@ -130,7 +129,7 @@ vector<Point> World::getObservableCells(Point p){
 		LineIterator it(ta, p, v, 4, false);
 		for(int i=0; i<it.count; i++, ++it){
 			Point pp  = it.pos();
-			if(pp.x >= costmap.cells.cols || pp.y >= costmap.cells.rows || costmap.cells.at<short>(pp) > costmap.infFree){
+			if(pp.x >= costmap.cells.cols || pp.y >= costmap.cells.rows || costmap.cells.at<short>(pp) > costmap.obsFree){
 				break;
 			}
 			else if(costmap.cells.at<short>(pp) == costmap.obsFree){

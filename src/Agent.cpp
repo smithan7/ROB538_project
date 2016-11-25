@@ -9,25 +9,35 @@ using namespace std;
 
 #include "Agent.h"
 
-Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents){
+Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThresh, int numAgents, vector<float> constants){
 	this->obsThresh = obsThresh;
 	this->comThresh = comThresh;
 	//this->myMap.createGraph(gMap, obsThresh, comThresh, gMap.gSpace);
 
 	cLoc= sLoc;
 	gLoc = sLoc;
+	oLoc = sLoc;
 
 	this->myIndex = myIndex;
 	this->pickMyColor();
 
-	for(int i=0; i<numAgents; i++){
-		agentLocs.push_back(sLoc);
-	}
+	market.init(numAgents, myIndex );
+	costmapCoordination.init( obsThresh, constants );
+	graphCoordination.init( obsThresh, comThresh, constants );
+}
+
+void Agent::communicate(Costmap &cIn, Market &mIn){
+	this->costmap.shareCostmap(cIn);
+	this->market.shareMarket( mIn );
 }
 
 void Agent::act(){
 
-	if(cLoc == gLoc){
+	// am I not in contact with the observer, via hops is ok
+	if( !this->market.contactWithObserver && true){
+		gLoc = oLoc;
+	}
+	else if(cLoc == gLoc){
 		while(true){
 			Point g;
 			g.x = gLoc.x + rand() % 5 - 2;
@@ -45,38 +55,57 @@ void Agent::act(){
 	myPath.erase(myPath.begin());
 	//cout << "Agent::act::cLoc / gLoc: " << cLoc << " / " << gLoc << endl;
 	//cout << "Agent::act::out" << endl;
+
+	history.push_back(cLoc);
+	market.updateMarket(cLoc, gLoc);
 }
 
+Point Agent::planRelay(){
 
-void Agent::soloPlan(string method, int timeLeft){
+	// get high level travel graph
+	graphCoordination.thinGraph.createThinGraph(costmap, 1, 1);
+	graphCoordination.thinGraph.displayCoordMap(costmap, true);
 
-	if(method.compare("greedy") == 0){
-		if(costmap.cells.at<short>(gLoc) != costmap.infFree || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
-			cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
-			gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
-			cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
-		}
+	// evaluate poses on travel graph
+	Point rLoc(-1,-1);
+	graphCoordination.relayPlanning(costmap, market, oLoc, rLoc);
+	return rLoc;
+}
+
+Point Agent::planExplore(){
+
+	Point eLoc = costmapCoordination.marketFrontierPlanner( costmap, market );
+	if( eLoc.x == -1 ){
+		eLoc = oLoc;
 	}
-	else if(method.compare("select") == 0){
+	return eLoc;
 
-		float w[3] = {1, 1, 0.5}; // explore, search, map
-		float e[2] = {0.5, 5}; // dominated, breaches
-		float spread = 0.5; // spread rate
-		costmap.getRewardMat(w, e, spread);
-		costmap.displayThermalMat( costmap.reward );
-
-		//gLoc = costmapPlanning.explorePlanner(costmap, cLoc);
-		//gLoc = costmapPlanning.searchPlanner(costmap, cLoc);
-		gLoc = costmapPlanning.mappingPlanner(costmap, cLoc);
-
-		if(gLoc.x < 0 || gLoc.y < 0){
-			cerr << "greedy" << endl;
-			if(costmap.cells.at<short>(gLoc) != costmap.infFree || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
-				gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
-			}
-		}
+	// is my goal still a frontier
+	if(costmap.cells.at<short>(gLoc) != costmap.unknown || (gLoc.x == cLoc.x && gLoc.y == cLoc.y) ){
+		cout << "going into costmapPlanning.GreedyFrontierPlanner" << endl;
+		gLoc = costmapPlanning.greedyFrontierPlanner(costmap, cLoc);
+		cout << "gLoc: " << gLoc.x << " , " << gLoc.y << endl;
 	}
-	//cout << "out of solo plan" << endl;
+}
+
+void Agent::planRoleSwapping(){
+
+	Point eLoc = planExplore();
+	Point rLoc = planRelay();
+
+	cout << "cLoc: " << cLoc << endl;
+	cout << "eReward / eLoc: " << costmapCoordination.eReward << " / " << eLoc << endl;
+	cout << "rReward / rLoc: " << graphCoordination.rReward << " / " << rLoc << endl;
+	waitKey(1);
+
+	if( costmapCoordination.eReward > graphCoordination.rReward ){
+		gLoc = eLoc;
+		market.roles[myIndex] = 'e';
+	}
+	else{
+		gLoc = rLoc;
+		market.roles[myIndex] = 'r';
+	}
 }
 
 
@@ -138,72 +167,6 @@ void Agent::pickMyColor(){
 	}
 	else if(this->myIndex == 9){
 		// white
-	}
-}
-
-void Agent::shareCostmap(Costmap &A, Costmap &B){
-	for(int i=0; i<A.cells.cols; i++){
-		for(int j=0; j<A.cells.rows; j++){
-			Point a(i,j);
-
-			// share cells
-
-			if(A.cells.at<short>(a) != B.cells.at<short>(a) ){ // do we think the same thing?
-				if(A.cells.at<short>(a) == A.unknown){
-					A.cells.at<short>(a) = B.cells.at<short>(a); // if A doesn't know, anything is better
-				}
-				else if(A.cells.at<short>(a) == A.infFree || A.cells.at<short>(a) == A.infWall){ // A think its inferred
-					if(B.cells.at<short>(a) == B.obsFree || B.cells.at<short>(a) == B.obsWall){ // B has observed
-						A.cells.at<short>(a) = B.cells.at<short>(a);
-					}
-				}
-				else if(B.cells.at<short>(a) == B.unknown){ // B doesn't know
-					B.cells.at<short>(a) = A.cells.at<short>(a); // B doesn't know, anything is better
-				}
-				else if(B.cells.at<short>(a) == B.infFree || B.cells.at<short>(a) == B.infWall){ // B think its inferred
-					if(A.cells.at<short>(a) == A.obsFree || A.cells.at<short>(a) == A.obsWall){ // A has observed
-						B.cells.at<short>(a) = A.cells.at<short>(a);
-					}
-				}
-			}
-
-
-			// share search
-			/*
-			if(A.searchReward.at<float>(a) < B.searchReward.at<float>(a) ){ // do we think the same thing?
-				B.searchReward.at<float>(a) = A.searchReward.at<float>(a);
-			}
-			else if(A.searchReward.at<float>(a) > B.searchReward.at<float>(a)){
-				A.searchReward.at<float>(a) = B.searchReward.at<float>(a);
-			}
-
-			// share occ
-
-			float minA = INFINITY;
-			float minB = INFINITY;
-
-			if(1-A.occ.at<float>(a) > A.occ.at<float>(a) ){
-				minA = 1-A.occ.at<float>(a);
-			}
-			else{
-				minA = A.occ.at<float>(a);
-			}
-
-			if(1-B.occ.at<float>(a) > B.occ.at<float>(a) ){
-				minB = 1-B.occ.at<float>(a);
-			}
-			else{
-				minB = B.occ.at<float>(a);
-			}
-
-			if( minA < minB ){ // do we think the same thing?
-				B.occ.at<float>(a) = A.occ.at<float>(a);
-			}
-			else{
-				A.occ.at<float>(a) = B.occ.at<float>(a);
-			}
-			*/
-		}
 	}
 }
 
