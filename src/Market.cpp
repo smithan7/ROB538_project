@@ -35,6 +35,7 @@ void Market::shareMarket( Market &vis ){
 			vis.cLocs[i] = this->cLocs[i];
 			vis.costs[i] = this->costs[i];
 			vis.times[i] = this->times[i];
+			vis.roles[i] = this->roles[i];
 
 			if(this->contactWithObserver){
 				vis.contactWithObserver = true;

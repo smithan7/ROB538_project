@@ -49,7 +49,8 @@ public:
 
 	Point cLoc, gLoc, oLoc; // for map
 	vector<Point> myPath;
-	vector<Point> history;
+	vector<Point> pathHistory;
+	vector<char> roleHistory;
 
 	// costmap class stuff
 	Costmap costmap;

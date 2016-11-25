@@ -92,7 +92,7 @@ int main(){
 				constants.clear();
 				constants.push_back(-1); // frontier cells
 				constants.push_back(1000); // frontier travel cost
-				constants.push_back(0); // dComArea as relay
+				constants.push_back(1); // dComArea as relay
 				constants.push_back(1); // dRelays as relay
 				constants.push_back(1); // dExplorers as relay
 				constants.push_back(1); // relay travel cost
@@ -143,12 +143,14 @@ int main(){
 
 			// all agents observe
 			for(int i=0; i<numAgents; i++){
-				world.observe(agents[i].cLoc, agents[i].costmap);
-				agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
+				if( agents[i].market.roles[i] == 'e'){
+					world.observe(agents[i].cLoc, agents[i].costmap);
+					agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
 
-				world.observe(agents[i].cLoc, globalObserver.costmap);
-				globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
-				globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
+					world.observe(agents[i].cLoc, globalObserver.costmap);
+					globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
+					globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
+				}
 			}
 
 			cout << "Main::made observations" << endl;
@@ -249,13 +251,13 @@ vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point o
 			// get position from timestep
 			for(size_t a=0; a<agents.size(); a++){
 				if( a != na ){
-					agents[a].cLoc = agents[a].history[t];
+					agents[a].cLoc = agents[a].pathHistory[t];
 				}
 			}
 
 			// all agents observe
 			for(size_t a=0; a<agents.size(); a++){
-				if(a != na){ // exclude diff agent
+				if(a != na && agents[a].roleHistory[t] == 'e'){ // exclude diff agent
 					world.observe(agents[a].cLoc, agents[a].costmap);
 					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
 				}

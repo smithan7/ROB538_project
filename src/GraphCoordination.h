@@ -38,10 +38,10 @@ public:
 	// for finding the optimal poses
 	Graph thinGraph;
 
-	void relayPlanning( Costmap &costmap, Market &market, Point oLoc, Point &rLoc );
-	vector<int> getCoveredRelays( Costmap &costmap, Market &market, Mat &comMat, Point oLoc );
-	vector<int> getCoveredRelays(Market &market, Mat &comMat );
-	vector<int> getCoveredExplorers( Mat &comMat, Market &market );
+	Point relayPlanning( Costmap &costmap, Market &market, Point oLoc, Point &rLoc );
+	int getCoveredRelays( Costmap &costmap, Market &market, Mat &comMat, Point oLoc );
+	int getCoveredRelays(Market &market, Mat &comMat );
+	int getCoveredExplorers( Mat &comMat, Market &market );
 	void simulateCommunication(Point pose, Mat &comMat, Costmap &costmap);
 	bool commoCheck(Point aLoc, Point bLoc, Costmap &costmap);
 	float comRadius;

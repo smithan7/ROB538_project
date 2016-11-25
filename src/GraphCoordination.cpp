@@ -55,15 +55,23 @@ void GraphCoordination::init(int obsRadius, int comRadius, vector<float> constan
 	this->comRadius = comRadius;
 }
 
-void GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point oLoc, Point &rLoc){
+Point GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point oLoc, Point &rLoc){
+
+	/*
+	cout << "market.roles: ";
+	for(size_t i=0; i<market.roles.size(); i++){
+		cout << market.roles[i] << ", ";
+	}
+	cout << endl;
+	*/
 
 	market.roles[market.myIndex] = 'e'; // make me an explorer, provides a null view
 	Mat comMat = Mat::zeros(costmap.cells.size(), CV_8UC1);
-	vector<int> relayList = getCoveredRelays(costmap, market, comMat, oLoc);
-	vector<int> explorerList = getCoveredExplorers( comMat, market );
+	int relayCount = getCoveredRelays(costmap, market, comMat, oLoc);
+	int explorerCount = getCoveredExplorers( comMat, market );
 
 	/*
-	cout << "comArea / relays / explorers: " << getMatCount( comMat ) << " / " << relayList.size() << " / " << explorerList.size() << endl;
+	cout << "comArea / relays / explorers: " << getMatCount( comMat ) << " / " << relayCount << " / " << explorerCount << endl;
 	namedWindow("main comMat", WINDOW_NORMAL);
 	imshow("main comMat", comMat);
 	waitKey(1);
@@ -80,12 +88,12 @@ void GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point o
 			market.cLocs[market.myIndex] = thinGraph.nodeLocations[i]; // simulate my position as a relay
 			Mat comMatTemp = comMat.clone();
 			simulateCommunication(thinGraph.nodeLocations[i], comMatTemp, costmap);
-			vector<int> relayListTemp = getCoveredRelays( market, comMatTemp ); // get all relays covered by comGraph and generate comArea
-			vector<int> explorerListTemp = getCoveredExplorers( comMatTemp, market );
+			int relayCountTemp = getCoveredRelays( market, comMatTemp ); // get all relays covered by comGraph and generate comArea
+			int explorerCountTemp = getCoveredExplorers( comMatTemp, market );
 
 			float dComArea = getMatCount( comMatTemp ) - getMatCount( comMat );
-			int dRelays = relayListTemp.size() - relayList.size();
-			int dExplorers = explorerListTemp.size() - explorerList.size();
+			int dRelays = relayCountTemp - relayCount;
+			int dExplorers = explorerCountTemp - explorerCount;
 
 			float rI = constants[0]*dComArea + constants[1]*dRelays + constants[2]*dExplorers + constants[3]*0; // put in path length
 
@@ -95,7 +103,7 @@ void GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point o
 
 			namedWindow("d comMat", WINDOW_NORMAL);
 			imshow("d comMat", comMatTemp);
-			waitKey(0);
+			waitKey(1);
 			*/
 
 			if(rI > rReward){
@@ -104,6 +112,7 @@ void GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point o
 			}
 		}
 	}
+	return rLoc;
 }
 
 float getMatCount( Mat &m ){
@@ -146,31 +155,50 @@ void GraphCoordination::simulateCommunication(Point pose, Mat &comMat, Costmap &
 	*/
 }
 
-vector<int> GraphCoordination::getCoveredExplorers( Mat &comMat, Market &market ){
+int GraphCoordination::getCoveredExplorers( Mat &comMat, Market &market ){
 
 	// find all agents in commo with the seed without using minus
-	vector<int> cSet;
+	Mat tMat = comMat.clone();
+	int cSet = 0;
 	for(size_t i=0; i<market.cLocs.size(); i++){
-		if(market.roles[i] == 'e' && comMat.at<uchar>(market.cLocs[i]) == 255){ // explorer and on the comMat
-			cSet.push_back(i);
+		if(market.roles[i] == 'e' && comMat.at<uchar>(market.cLocs[i]) == 255 && i != market.myIndex){ // explorer and on the comMat
+			cSet++;
+			circle(tMat, market.cLocs[i], 2, Scalar(127), -1, 8);
 		}
 	}
+
+	/*
+	namedWindow("eMat", WINDOW_NORMAL);
+	imshow("eMat", tMat);
+	waitKey(1);
+	*/
+
 	return cSet;
 }
 
-vector<int> GraphCoordination::getCoveredRelays(Market &market, Mat &comMat ){
+int GraphCoordination::getCoveredRelays(Market &market, Mat &comMat ){
 
 	// find all agents in commo with the seed without using minus
-	vector<int> cSet;
+	Mat tMat = comMat.clone();
+
+	int cSet = 0;
 	for(size_t i=0; i<market.cLocs.size(); i++){
-		if(market.roles[i] == 'r' && comMat.at<uchar>(market.cLocs[i]) == 255){ // relay and on the comMat
-			cSet.push_back(i);
+		if(market.roles[i] == 'r' && comMat.at<uchar>(market.cLocs[i]) == 255 && i != market.myIndex){ // relay and on the comMat
+			cSet++;
+			circle(tMat, market.cLocs[i], 2, Scalar(127), -1, 8);
 		}
 	}
+
+	/*
+	namedWindow("rMat", WINDOW_NORMAL);
+	imshow("rMat", tMat);
+	waitKey(1);
+	*/
+
 	return cSet;
 }
 
-vector<int> GraphCoordination::getCoveredRelays( Costmap &costmap, Market &market, Mat &comMat, Point oLoc ){
+int GraphCoordination::getCoveredRelays( Costmap &costmap, Market &market, Mat &comMat, Point oLoc ){
 
 	// find all agents in commo with the seed without using minus
 	vector<int> cSet;
@@ -182,7 +210,7 @@ vector<int> GraphCoordination::getCoveredRelays( Costmap &costmap, Market &marke
 		changes = false;
 
 		for(size_t i=0; i<market.cLocs.size(); i++){
-			if(market.roles[i] == 'r' && comMat.at<uchar>(market.cLocs[i]) == 255){ // relay and on the comMat
+			if(market.roles[i] == 'r' && comMat.at<uchar>(market.cLocs[i]) == 255 && int(i) != market.myIndex){ // relay and on the comMat
 				bool flag = true;
 				for(size_t cs = 0; cs < cSet.size(); cs++){
 					if( cSet[cs] == int(i) ){
@@ -192,6 +220,9 @@ vector<int> GraphCoordination::getCoveredRelays( Costmap &costmap, Market &marke
 				}
 				if( flag ){ // not in cSet, add to cSet and comMat
 					cSet.push_back( i );
+					if( int(i) > market.myIndex ){
+						simulateCommunication( market.gLocs[i], comMat, costmap );
+					}
 					simulateCommunication( market.cLocs[i], comMat, costmap );
 					changes = true;
 				}
@@ -204,7 +235,7 @@ vector<int> GraphCoordination::getCoveredRelays( Costmap &costmap, Market &marke
 	imshow("GraphCoordination::getCoveredRelay::comMat", comMat);
 	waitKey(1);
 	*/
-	return cSet;
+	return int (cSet.size() );
 }
 
 bool GraphCoordination::commoCheck(Point aLoc, Point bLoc, Costmap &costmap){

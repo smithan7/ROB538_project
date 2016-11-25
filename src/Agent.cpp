@@ -56,7 +56,8 @@ void Agent::act(){
 	//cout << "Agent::act::cLoc / gLoc: " << cLoc << " / " << gLoc << endl;
 	//cout << "Agent::act::out" << endl;
 
-	history.push_back(cLoc);
+	pathHistory.push_back(cLoc);
+	roleHistory.push_back( market.roles[myIndex] );
 	market.updateMarket(cLoc, gLoc);
 }
 
@@ -67,8 +68,7 @@ Point Agent::planRelay(){
 	graphCoordination.thinGraph.displayCoordMap(costmap, true);
 
 	// evaluate poses on travel graph
-	Point rLoc(-1,-1);
-	graphCoordination.relayPlanning(costmap, market, oLoc, rLoc);
+	Point rLoc = graphCoordination.relayPlanning(costmap, market, oLoc, rLoc);
 	return rLoc;
 }
 
@@ -86,10 +86,12 @@ void Agent::planRoleSwapping(){
 	Point eLoc = planExplore();
 	Point rLoc = planRelay();
 
+	/*
 	cout << "cLoc: " << cLoc << endl;
 	cout << "eReward / eLoc: " << costmapCoordination.eReward << " / " << eLoc << endl;
 	cout << "rReward / rLoc: " << graphCoordination.rReward << " / " << rLoc << endl;
 	waitKey(1);
+	*/
 
 	if( costmapCoordination.eReward > graphCoordination.rReward ){
 		gLoc = eLoc;
