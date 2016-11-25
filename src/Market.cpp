@@ -17,9 +17,11 @@ void Market::init(int nAgents, int myIndex) {
 		gLocs.push_back(a);
 		times.push_back(0);
 		costs.push_back(0);
+		roles.push_back('e');
 	}
 	this->myIndex = myIndex;
 	contactWithObserver = false;
+	this->nAgents = nAgents;
 }
 
 Market::~Market() {}
@@ -33,6 +35,10 @@ void Market::shareMarket( Market &vis ){
 			vis.cLocs[i] = this->cLocs[i];
 			vis.costs[i] = this->costs[i];
 			vis.times[i] = this->times[i];
+
+			if(this->contactWithObserver){
+				vis.contactWithObserver = true;
+			}
 		}
 	}
 }
@@ -59,6 +65,7 @@ void Market::printMarket(){
 
 void Market::updateMarket( Point cLoc, Point gLoc ){
 	this->iterateTime();
+	this->contactWithObserver = false;
 
 	cLocs[myIndex] = cLoc;
 	gLocs[myIndex] = gLoc;

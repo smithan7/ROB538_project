@@ -40,11 +40,13 @@ public:
 	vector<float> costs;
 	vector<float> values;
 	vector<float> rewards;
+	vector<char> roles;
 
 	vector<int> times;
 	bool contactWithObserver;
 
 	int myIndex;
+	int nAgents;
 
 };
 

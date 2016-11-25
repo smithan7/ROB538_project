@@ -36,18 +36,19 @@ int main(){
 	srand( time(NULL) );
 	bool videoFlag = false;
 
-	int numAgents = 10;
+	int numAgents = 4;
 	int numIterations = 1;
 
-	int gSpace = 4;
+	int gSpace = 2;
 	float obsThresh = 40;
 	float comThresh = 80;
-	int maxTime = 500;
+	int maxTime = 100;
 
 	vector<string> fName;
 	//fName.push_back("mineMap");
-	//fName.push_back("test6");
-	fName.push_back("slamMap");
+	fName.push_back("test6");
+	//fName.push_back("openTest");
+	//fName.push_back("slamMap");
 	//fName.push_back("tunnelTest");
 
 	int map_iter = 0;
@@ -79,14 +80,34 @@ int main(){
 		Observer humanObserver(sLoc[iterations_iter], numAgents, false, "operator");
 		Observer globalObserver(sLoc[iterations_iter], numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
 
-		vector<float> constants;
-		for(int i=0; i<4; i++){
-			constants.push_back(1);
-		}
-
 		vector<Agent> agents;
 		for(int i=0; i<numAgents; i++){
-			if( true ){ // different starting location?
+
+			vector<float> constants;
+			for(int j=0; j<5; j++){
+				constants.push_back(1);//float(rand() % 1000) / 100 - 50);
+			}
+
+			if(i < 2){ // make a relay
+				constants.clear();
+				constants.push_back(-1); // frontier cells
+				constants.push_back(1000); // frontier travel cost
+				constants.push_back(0); // dComArea as relay
+				constants.push_back(1); // dRelays as relay
+				constants.push_back(1); // dExplorers as relay
+				constants.push_back(1); // relay travel cost
+			}
+			else{ // make an explorer
+				constants.clear();
+				constants.push_back(100); // frontier cells
+				constants.push_back(1); // frontier travel cost
+				constants.push_back(-10); // dComArea as relay
+				constants.push_back(0); // dRelays as relay
+				constants.push_back(0); // dExplorers as relay
+				constants.push_back(1); // relay travel cost
+			}
+
+			if( false ){ // different starting location?
 				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents, constants));
 				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents+i].x << " , " << sLoc[iterations_iter*numAgents+i].y << endl;
 			}
@@ -141,13 +162,14 @@ int main(){
 					if( world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh) ){
 						agents[i].communicate( humanObserver.costmap, humanObserver.market );
 						humanObserver.communicate( agents[i].costmap, agents[i].market );
+						agents[i].market.contactWithObserver = true;
 					}
 					// all agents communicate with each other if possible
 					for(int j=0; j<numAgents; j++){
 						if(i!=j){
 							if(world.commoCheck(agents[i].cLoc, agents[j].cLoc, comThresh)){
 								agents[i].communicate( agents[j].costmap, agents[j].market );
-								//agents[j].communicate( agents[i].costmap, agents[i].market );
+								agents[j].communicate( agents[i].costmap, agents[i].market );
 							}
 						}
 					}

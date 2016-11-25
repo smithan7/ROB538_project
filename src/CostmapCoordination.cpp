@@ -43,7 +43,8 @@ void CostmapCoordination::marketFrontiers(Costmap &costmap, Market &market){
 
 	// am I closer to any poses in market than the current purchaser?
 	for(size_t i=0; i<market.gLocs.size(); i++){
-		if( int(i) != market.myIndex ){
+		if( int(i) != market.myIndex && market.roles[i] == 'e'){
+			cerr << "roles = 'e' " << endl;
 			bool flag = false;
 			if( market.gLocs[i].x > 0 && market.gLocs[i].y > 0){
 				float ed = costmap.getEuclidianDistance( market.cLocs[market.myIndex], market.gLocs[i]);

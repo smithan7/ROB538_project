@@ -78,8 +78,9 @@ Scalar Observer::setAgentColor(int index){
 
 void Observer::showCellsPlot(){
 	costmap.buildCellsPlot();
-	addAgentsToCostmapPlot();
 	addSelfToCostmapPlot();
+	addAgentsToCostmapPlot();
+
 	namedWindow(name, WINDOW_NORMAL);
 	imshow(name, costmap.displayPlot);
 	waitKey(1);

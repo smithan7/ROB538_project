@@ -32,43 +32,21 @@ public:
 	GraphCoordination();
 	virtual ~GraphCoordination();
 
+	void init(int obsRadius, int comRadius, vector<float> constants);
+	vector<float> constants;
+
 	// for finding the optimal poses
-	Graph thinGraph, poseGraph, travelGraph, tempGraph;
+	Graph thinGraph;
 
-	float observedReward(Mat &observed, Mat &reward);
-	void simulateObservation(Point pose, Mat &resultingView, Costmap &costmap);
-	void findPosesEvolution(Costmap &costmap);
-	void getOset(vector<int> &oStates, vector<int> &cStates, vector<int> &workingSet);
-
-	void marketPoses( Costmap &costmap, Market &market );
-	float getPoseReward( Point in, Costmap &costmap);
-	void getViews(Costmap &costmap, vector<int> cPoses, Mat &cView, float &cReward, vector<Point> &poses, vector<Mat> &views, vector<float> poseRewards, float &gReward);
-	void plotPoses( Costmap &costmap, vector<int> &cPoses, vector<int> &oPoses, vector<Mat> &views, vector<Point> &poses);
-	float getDiscountedRewards( Costmap &costmap, vector<Point> &locs, int i, float globalReward );
-	void simulateNULLObservation(Point pose, Mat &resultingView, Costmap &costmap);
-
-
-
-	Point posePathPlanningTSP(Graph &graph, Costmap &costmap, vector<Point> &agentLocs, int &myIndex);
-	void displayPoseTours(Costmap &costmap);
-	void tspPoseFullTourPlanner(vector<Point> &agentLocs, int &myIndex);
-	float getGraphObservations(Graph &graph, Costmap &costmap, Mat &gView, vector<int> &workingSet);
-
-	void findPoseGraphTransitions(Graph &graph, Costmap &costmap);
-	void displayPoseGraph(Costmap &costmap);
-	void findPosesEvolution(Graph &graph, Costmap &costmap, vector<Point> &agentLocs);
-	int matReward(Mat &in);
-	vector<int> getWorkingSet(Graph &graph, Costmap &costmap);
-	float getCurrentPoseSetReward(Graph &graph, Costmap &costmap, Mat &cView, vector<int> &workingSet);
-	void getOset(Graph &graph, Costmap &costmap, vector<int> &oStates, vector<int> &cStates, vector<int> &workingSet);
-
-	int nPullsTSP;
-	int nPullsEvolvePoseGraph;
-	int minObsForPose;
-	vector<Point> viewPerim;
-
-	vector<vector<int> > tspPoseTours; // [agent, pose along tour]
-	vector<vector<Point > > tspPoseToursLocations;
+	void relayPlanning( Costmap &costmap, Market &market, Point oLoc, Point &rLoc );
+	vector<int> getCoveredRelays( Costmap &costmap, Market &market, Mat &comMat, Point oLoc );
+	vector<int> getCoveredRelays(Market &market, Mat &comMat );
+	vector<int> getCoveredExplorers( Mat &comMat, Market &market );
+	void simulateCommunication(Point pose, Mat &comMat, Costmap &costmap);
+	bool commoCheck(Point aLoc, Point bLoc, Costmap &costmap);
+	float comRadius;
+	float rReward;
+	vector<Point> viewPerim, comPerim;
 
 };
 

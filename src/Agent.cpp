@@ -23,6 +23,7 @@ Agent::Agent(Point sLoc, int myIndex, World &gMap, float obsThresh, float comThr
 
 	market.init(numAgents, myIndex );
 	costmapCoordination.init( obsThresh, constants );
+	graphCoordination.init( obsThresh, comThresh, constants );
 }
 
 void Agent::communicate(Costmap &cIn, Market &mIn){
@@ -33,12 +34,10 @@ void Agent::communicate(Costmap &cIn, Market &mIn){
 void Agent::act(){
 
 	// am I not in contact with the observer, via hops is ok
-	if( !this->market.contactWithObserver ){
-		//gLoc = oLoc;
-		//return;
+	if( !this->market.contactWithObserver && true){
+		gLoc = oLoc;
 	}
-
-	if(cLoc == gLoc){
+	else if(cLoc == gLoc){
 		while(true){
 			Point g;
 			g.x = gLoc.x + rand() % 5 - 2;
@@ -68,10 +67,9 @@ Point Agent::planRelay(){
 	graphCoordination.thinGraph.displayCoordMap(costmap, true);
 
 	// evaluate poses on travel graph
-
-
-	return Point(-1,-1);
-
+	Point rLoc(-1,-1);
+	graphCoordination.relayPlanning(costmap, market, oLoc, rLoc);
+	return rLoc;
 }
 
 Point Agent::planExplore(){
@@ -95,13 +93,18 @@ void Agent::planRoleSwapping(){
 	Point eLoc = planExplore();
 	Point rLoc = planRelay();
 
-	if( costmapCoordination.eReward > -INFINITY ){
+	cout << "cLoc: " << cLoc << endl;
+	cout << "eReward / eLoc: " << costmapCoordination.eReward << " / " << eLoc << endl;
+	cout << "rReward / rLoc: " << graphCoordination.rReward << " / " << rLoc << endl;
+	waitKey(1);
+
+	if( costmapCoordination.eReward > graphCoordination.rReward ){
 		gLoc = eLoc;
-		role = 0;
+		market.roles[myIndex] = 'e';
 	}
 	else{
 		gLoc = rLoc;
-		role = 1;
+		market.roles[myIndex] = 'r';
 	}
 }
 
