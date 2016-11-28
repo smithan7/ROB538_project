@@ -27,200 +27,224 @@ using namespace std;
 
 float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
 vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
+float runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime);
+vector<float> mutate(vector<float> a);
 
 int main(){
 
-	destroyAllWindows();
+	int numAgents = 5;
+	int popSize = 20;
+	vector<vector<float> > constants;
 
-	vector<int> treePath;
-	srand( time(NULL) );
-	bool videoFlag = false;
-
-	int numAgents = 4;
-	int numIterations = 1;
+	for(int i=0; i<popSize; i++){
+		vector<float> t;
+		for(int j=0; j<5; j++){
+			t.push_back(float(rand() % 10000) / 1000 - 50); // rand -50 -> 50 // frontier cells, frontier travel cost, dComArea, dRealys, dExplorers, relay travel cost
+		}
+		constants.push_back( t );
+	}
 
 	int gSpace = 2;
 	float obsThresh = 40;
 	float comThresh = 80;
 	int maxTime = 50;
 
-	vector<string> fName;
+	string fName = "test6";
 	//fName.push_back("mineMap");
-	fName.push_back("test6");
+	//fName.push_back("test6");
 	//fName.push_back("openTest");
 	//fName.push_back("slamMap");
 	//fName.push_back("tunnelTest");
 
-	int map_iter = 0;
-	cout << "fName.size(): " << fName.size() << " & mapIter: " << map_iter << endl;
+	// create world
+	World world(fName, gSpace, obsThresh, comThresh);
+	cout << "main::loaded world" << fName << endl;
+
+	int maxGen = 10;
+	for(int generations = 0; generations < maxGen; generations++){ // how many generations
+
+		Point sLoc;
+		while(true){
+			Point tLoc(rand() % world.costmap.cells.cols, rand() % world.costmap.cells.rows);
+			if(world.costmap.cells.at<short>(tLoc) == world.costmap.obsFree){ // its not an obstacle
+				sLoc = tLoc;
+				break;
+			}
+		}
+
+		for(int pop = 0; pop < popSize; pop+=2){ // for each member of the populatioin
+
+			vector<vector<float> > testConsts;
+			testConsts.push_back(constants[pop]);
+
+			float mScoreA = 0;
+			float mScoreB = 0;
+
+			for( int pIter = 0; pIter < 5; pIter++){ // how many iterations to test each agent
+
+				for(int a=1; a<numAgents; a++){ // get the other agents
+					int ta = rand() % popSize;
+					testConsts.push_back( constants[ ta ] );
+				}
+
+				float tScoreA = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
+
+				if( tScoreA > mScoreA ){ // keep best score
+					mScoreA = tScoreA;
+				}
+
+				testConsts[0] = constants[pop+1];
+
+				float tScoreB = runTest( testConsts, sLoc, world, numAgents, maxTime ); // run test
+
+				if( tScoreB > mScoreB ){ // keep best score
+					mScoreB = tScoreB;
+				}
+			}
+
+			if( mScoreA > mScoreB ){
+				constants[pop+1] = mutate( constants[pop] );
+			}
+			else{
+				constants[pop] = mutate( constants[pop+1] );
+			}
+		}
+	}
+}
+
+vector<float> mutate(vector<float> a){
+
+	for(int i=0; i<6; i++){
+		a[i] = a[i] + float(rand() % 1000 / 100) - 5;
+	}
+	return a;
+}
+
+float runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime){
+
+	float obsThresh = world.obsThresh;
+	float comThresh = world.commThresh;
+
 
 	string mapLog;
 	vector<int> timeLog;
 	vector<float> percentObservedLog;
 
 	srand( time(NULL) );
-	// create world
-	World world(fName[map_iter], gSpace, obsThresh, comThresh);
-	cout << "main::loaded world" << fName[ map_iter ] << endl;
 
-	vector<Point> sLoc;
-	for(int i=0; i<numIterations*numAgents; i++){
-		while(true){
-			Point tLoc(rand() % world.costmap.cells.cols, rand() % world.costmap.cells.rows);
-			if(world.costmap.cells.at<short>(tLoc) == world.costmap.obsFree){ // its not an obstacle
-				sLoc.push_back(tLoc);
-				break;
-			}
-		}
+	vector<Agent> agents;
+	for(int i=0; i<numAgents; i++){
+		agents.push_back( Agent(sLoc, i, world, obsThresh, comThresh, numAgents, constants[i]) );
 	}
-	cout << "main::Chose starting locations" << endl;
 
-	for(int iterations_iter = 0; iterations_iter<numIterations; iterations_iter++){
+	Observer humanObserver(sLoc, numAgents, false, "operator");
+	Observer globalObserver(sLoc, numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
 
-		Observer humanObserver(sLoc[iterations_iter], numAgents, false, "operator");
-		Observer globalObserver(sLoc[iterations_iter], numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
+	time_t start = clock();
 
-		vector<Agent> agents;
-		for(int i=0; i<numAgents; i++){
+	// video writers
+	VideoWriter slamVideo;
+	bool videoFlag = false;
+	if(videoFlag){
+		//Size frameSize( static_cast<int>(world.costmap.cells.cols, world.costmap.cells.rows) );
+		//slamVideo.open("multiAgentInferen ce.avi",CV_FOURCC('M','J','P','G'), 30, frameSize, true );
+		cout << "Main::Videos started" << endl;
+	}
 
-			vector<float> constants;
-			for(int j=0; j<5; j++){
-				constants.push_back(float(rand() % 10000) / 1000 - 50); // rand -50 -> 50
-			}
+	cout << "Main::Ready, press any key to begin." << endl;
+	waitKey(1);
+	cout << "Main::Here we go!" << endl;
 
-			if(i < 0){ // make a relay
-				constants.clear();
-				constants.push_back(-1); // frontier cells
-				constants.push_back(1000); // frontier travel cost
-				constants.push_back(1); // dComArea as relay
-				constants.push_back(1); // dRelays as relay
-				constants.push_back(1); // dExplorers as relay
-				constants.push_back(1); // relay travel cost
-			}
-			else if(i < 0){ // make an explorer
-				constants.clear();
-				constants.push_back(100); // frontier cells
-				constants.push_back(1); // frontier travel cost
-				constants.push_back(-10); // dComArea as relay
-				constants.push_back(0); // dRelays as relay
-				constants.push_back(0); // dExplorers as relay
-				constants.push_back(1); // relay travel cost
-			}
+	world.observe(humanObserver.cLoc, humanObserver.costmap);
 
-			if( false ){ // different starting location?
-				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents, constants));
-				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents+i].x << " , " << sLoc[iterations_iter*numAgents+i].y << endl;
-			}
-			else{
-				agents.push_back(Agent(sLoc[iterations_iter*numAgents], i, world, obsThresh, comThresh, numAgents, constants));
-				cout << "Main::Agent[" << i << "]: created at : " << sLoc[iterations_iter*numAgents].x << " , " << sLoc[iterations_iter*numAgents].y << endl;
-			}
-		}
-		cout << "Main::All agents created" << endl;
-
-		time_t start = clock();
-
-		// video writers
-		VideoWriter slamVideo;
-		if(videoFlag){
-			//Size frameSize( static_cast<int>(world.costmap.cells.cols, world.costmap.cells.rows) );
-			//slamVideo.open("multiAgentInferen ce.avi",CV_FOURCC('M','J','P','G'), 30, frameSize, true );
-			cout << "Main::Videos started" << endl;
-		}
-
-		cout << "Main::Ready, press any key to begin." << endl;
+	int timeSteps = -1;
+	float percentObserved = 0;
+	while(timeSteps < maxTime-1 && percentObserved < 0.99){
+		cout << "Main::Starting while loop" << endl;
+		timeSteps++;
 		waitKey(1);
-		cout << "Main::Here we go!" << endl;
 
-		world.observe(humanObserver.cLoc, humanObserver.costmap);
+		// all agents observe
+		for(int i=0; i<numAgents; i++){
+			if( agents[i].market.roles[i] == 'e'){
+				world.observe(agents[i].cLoc, agents[i].costmap);
+				agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
 
-		int timeSteps = -1;
-		float percentObserved = 0;
-		while(timeSteps < maxTime-1 && percentObserved < 0.99){
-			cout << "Main::Starting while loop" << endl;
-			timeSteps++;
-			waitKey(1);
-
-			// all agents observe
-			for(int i=0; i<numAgents; i++){
-				if( agents[i].market.roles[i] == 'e'){
-					world.observe(agents[i].cLoc, agents[i].costmap);
-					agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
-
-					world.observe(agents[i].cLoc, globalObserver.costmap);
-					globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
-					globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
-				}
+				world.observe(agents[i].cLoc, globalObserver.costmap);
+				globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
+				globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
 			}
+		}
 
-			cout << "Main::made observations" << endl;
+		cout << "Main::made observations" << endl;
 
-			for(int commHops = 0; commHops < numAgents; commHops++){
-				// all agents communicate
-				for(int i=0; i<numAgents; i++){
-					// all agents communicate with global observer, always
-					agents[i].communicate( globalObserver.costmap, globalObserver.market );
-					// all agents communicate with humanObserver, if possible
-					if( world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh) ){
-						agents[i].communicate( humanObserver.costmap, humanObserver.market );
-						humanObserver.communicate( agents[i].costmap, agents[i].market );
-						agents[i].market.contactWithObserver = true;
-					}
-					// all agents communicate with each other if possible
-					for(int j=0; j<numAgents; j++){
-						if(i!=j){
-							if(world.commoCheck(agents[i].cLoc, agents[j].cLoc, comThresh)){
-								agents[i].communicate( agents[j].costmap, agents[j].market );
-								agents[j].communicate( agents[i].costmap, agents[i].market );
-							}
+		for(int commHops = 0; commHops < numAgents; commHops++){
+			// all agents communicate
+			for(int i=0; i<numAgents; i++){
+				// all agents communicate with global observer, always
+				agents[i].communicate( globalObserver.costmap, globalObserver.market );
+				// all agents communicate with humanObserver, if possible
+				if( world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh) ){
+					agents[i].communicate( humanObserver.costmap, humanObserver.market );
+					humanObserver.communicate( agents[i].costmap, agents[i].market );
+					agents[i].market.contactWithObserver = true;
+				}
+				// all agents communicate with each other if possible
+				for(int j=0; j<numAgents; j++){
+					if(i!=j){
+						if(world.commoCheck(agents[i].cLoc, agents[j].cLoc, comThresh)){
+							agents[i].communicate( agents[j].costmap, agents[j].market );
+							agents[j].communicate( agents[i].costmap, agents[i].market );
 						}
 					}
 				}
 			}
-			cout << "Main::Out of communicate with other agents" << endl;
-
-
-			humanObserver.showCellsPlot();
-			waitKey(1);
-			globalObserver.showCellsPlot();
-			waitKey(1);
-			humanObserver.market.iterateTime();
-
-			cout << "Main::Into plan for one timestep" << endl;
-			// all agents plan for one timestep
-			for(int i=0; i<numAgents; i++){
-				agents[i].planRoleSwapping(); // includes updating internal cLoc
-			}
-
-			// all agents act for one timestep
-			for(int i=0; i<numAgents; i++){
-				agents[i].act();
-			}
-
-			if(videoFlag){
-				for(int i =0; i<5; i++){ // slower frmae rate through repeated frames
-					slamVideo << humanObserver.costmap.displayPlot;
-				}
-			}
-
-			// print out progress
-			percentObserved = getPercentObserved(world.costmap, humanObserver.costmap);
-			cout << "------timeSteps & percent observed: " << timeSteps << " & " << percentObserved << " " << map_iter << ": " << fName[map_iter] << endl;
-
-		} // end timeStep in simulation
-
-		cerr << "made it to the end of the simulation!" << endl;
-
-		vector<float> dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
-
-		cout << "dReward: ";
-		for(size_t i=0; i<dReward.size(); i++){
-			cout << dReward[i] << ", ";
 		}
-		cout << endl;
+		cout << "Main::Out of communicate with other agents" << endl;
 
 
-	} // end iterations
+		humanObserver.showCellsPlot();
+		waitKey(1);
+		globalObserver.showCellsPlot();
+		waitKey(1);
+		humanObserver.market.iterateTime();
+
+		cout << "Main::Into plan for one timestep" << endl;
+		// all agents plan for one timestep
+		for(int i=0; i<numAgents; i++){
+			agents[i].planRoleSwapping(); // includes updating internal cLoc
+		}
+
+		// all agents act for one timestep
+		for(int i=0; i<numAgents; i++){
+			agents[i].act();
+		}
+
+		if(videoFlag){
+			for(int i =0; i<5; i++){ // slower frmae rate through repeated frames
+				slamVideo << humanObserver.costmap.displayPlot;
+			}
+		}
+
+		// print out progress
+		percentObserved = getPercentObserved(world.costmap, humanObserver.costmap);
+		cout << "------timeSteps & percent observed: " << timeSteps << " & " << percentObserved << endl;
+
+	} // end timeStep in simulation
+
+	cout << "made it to the end of the simulation!" << endl;
+
+	/*
+	vector<float> dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
+
+	cout << "dReward: ";
+	for(size_t i=0; i<dReward.size(); i++){
+		cout << dReward[i] << ", ";
+	}
+	cout << endl;
+	*/
+	return percentObserved;
+
 	ofstream myfile;
 	myfile.open ("/home/andy/git/rob538Project/results/run1.csv", ofstream::out | ofstream::app);
 	for(size_t i=0; i<timeLog.size(); i++){
