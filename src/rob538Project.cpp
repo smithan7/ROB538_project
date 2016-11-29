@@ -26,15 +26,16 @@ using namespace cv;
 using namespace std;
 
 float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
-vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
-float runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime);
+float getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
+vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime);
 vector<float> mutate(vector<float> a);
 
 int main(){
 
 	srand(time(NULL));
-	int numAgents = 3;
-	int popSize = 6;
+	int numAgents = 5;
+	int popSize = 40;
+	int lenIters = 3;
 	vector<vector<float> > constants;
 
 	for(int i=0; i<popSize; i++){
@@ -62,16 +63,19 @@ int main(){
 	//cout << "main::loaded world" << fName << endl;
 
 	int maxGen = 50;
-	for(int generations = 0; generations < maxGen; generations++){ // how many generations
 
-		Point sLoc;
-		while(true){
-			Point tLoc(rand() % world.costmap.cells.cols, rand() % world.costmap.cells.rows);
-			if(world.costmap.cells.at<short>(tLoc) == world.costmap.obsFree){ // its not an obstacle
-				sLoc = tLoc;
-				break;
-			}
+	vector<float> gGen;
+
+	Point sLoc;
+	while(true){
+		Point tLoc(rand() % world.costmap.cells.cols, rand() % world.costmap.cells.rows);
+		if(world.costmap.cells.at<short>(tLoc) == world.costmap.obsFree){ // its not an obstacle
+			sLoc = tLoc;
+			break;
 		}
+	}
+
+	for(int generations = 0; generations < maxGen; generations++){ // how many generations
 
 		vector<int> indexList;
 		vector<float> scoreList;
@@ -80,53 +84,62 @@ int main(){
 			scoreList.push_back(-INFINITY);
 		}
 
+		float gs = 0;
+
 		for(int pop = 0; pop < popSize; pop++){ // for each member of the populatioin
 
-			cerr << "constants.size(): " << constants.size();
-			cerr << "constants[pop].size(): " << constants[pop].size() << endl;
 			vector<vector<float> > testConsts;
 			testConsts.push_back(constants[pop]);
 
-			float mScoreA = 0;
-			float mScoreB = 0;
+			float score =-INFINITY;
+			int index = pop;
+			float g = 0;
 
-			for( int pIter = 0; pIter < 1; pIter++){ // how many iterations to test each agent
+			for( int pIter = 0; pIter < lenIters; pIter++){ // how many iterations to test each agent
 
-				for(int a=1; a<numAgents; a++){ // get the other agents
+				for(int a=1; a<numAgents; a++){ // get random other agents
 					int ta = rand() % popSize;
 					testConsts.push_back( constants[ ta ] );
 				}
 
-				float score = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
-				int index = pop;
+				vector<float> r = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
 
-				for(int i=0; i<popSize; i++){
-					if( score > scoreList[i]){
-						float ts = scoreList[i];
-						float ti = indexList[i];
+				float s = r[0];
+				g += r[1] / lenIters;
 
-						scoreList[i] = score;
-						indexList[i] = index;
-
-						score = ts;
-						index = ti;
-					}
+				if(s > score){ // find best score, lenient
+					score = s;
 				}
-
 			}
+
+			gs += g / popSize;
+
+			for(int i=0; i<popSize; i++){
+				if( score > scoreList[i]){
+					float ts = scoreList[i];
+					float ti = indexList[i];
+
+					scoreList[i] = score;
+					indexList[i] = index;
+
+					score = ts;
+					index = ti;
+				}
+			}
+
 		}
 
+		gGen.push_back( gs );
+		cerr << gs << ", ";
 
-		cerr << "into training" << endl;
 		vector<vector<float> > tConst;
 		for(int i=0; i<popSize/2; i++){
 			tConst.push_back( constants[ indexList[i]]);
 			tConst.push_back( mutate( constants[ indexList[i] ]) );
 		}
-		cerr << "out of training" << endl;
 		constants = tConst;
-		cerr << "saved training" << endl;
 	}
+
 }
 
 vector<float> mutate(vector<float> a){
@@ -137,7 +150,7 @@ vector<float> mutate(vector<float> a){
 	return a;
 }
 
-float runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime){
+vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime){
 
 	float obsThresh = world.obsThresh;
 	float comThresh = world.commThresh;
@@ -252,17 +265,14 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 
 	//cout << "main::made it to the end of the simulation!" << endl;
 
-	vector<float> dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
+	float dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
 
-	cout << "dReward: ";
-	for(size_t i=0; i<dReward.size(); i++){
-		cout << dReward[i] << ", ";
-	}
-	cout << endl;
-	return dReward[0];
+	vector<float> rewards;
+	rewards.push_back( dReward );
+	rewards.push_back( percentObserved );
+	return rewards;
 
 
-	return percentObserved;
 
 	/*
 	ofstream myfile;
@@ -280,64 +290,59 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 } // end maps
 
 
-vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward){
+float getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward){
 
-	vector<float> dRewards;
+	Observer tO(oLoc, agents.size(), false, "diff reward");
+	for(size_t a=0; a<agents.size(); a++){
+		agents[a].costmap.cells.release();
+	}
 
-	for(size_t na=0; na<agents.size(); na++){
+	for(int t=0; t<timeSteps; t++){
 
-		Observer tO(oLoc, agents.size(), false, "diff reward");
+		// get position from timestep
 		for(size_t a=0; a<agents.size(); a++){
-			agents[a].costmap.cells.release();
+			if( a != 0 ){
+				agents[a].cLoc = agents[a].pathHistory[t];
+			}
 		}
 
-		for(int t=0; t<timeSteps; t++){
-
-			// get position from timestep
-			for(size_t a=0; a<agents.size(); a++){
-				if( a != na ){
-					agents[a].cLoc = agents[a].pathHistory[t];
-				}
+		// all agents observe
+		for(size_t a=0; a<agents.size(); a++){
+			if(a != 0 && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
+				world.observe(agents[a].cLoc, agents[a].costmap);
+				agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
 			}
+		}
+		world.observe(tO.cLoc, tO.costmap);
 
-			// all agents observe
+		// all agents communicate
+		for(size_t hops = 0; hops < agents.size(); hops++){
 			for(size_t a=0; a<agents.size(); a++){
-				if(a != na && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
-					world.observe(agents[a].cLoc, agents[a].costmap);
-					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
-				}
-			}
-			world.observe(tO.cLoc, tO.costmap);
-
-			// all agents communicate
-			for(size_t hops = 0; hops < agents.size(); hops++){
-				for(size_t a=0; a<agents.size(); a++){
-					// all agents communicate with humanObserver, if possible
-					if(a != na){ // exclude diff agent
-						if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
-							agents[a].communicate(tO.costmap, tO.market);
-							tO.communicate(agents[a].costmap, agents[a].market);
-						}
-						for(size_t b=a+1; b<agents.size(); b++){
-							if(a!=b && b!=na){
-								if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
-									agents[a].communicate(agents[b].costmap, agents[b].market);
-									agents[b].communicate(agents[a].costmap, agents[a].market);
-								}
+				// all agents communicate with humanObserver, if possible
+				if(a != 0){ // exclude diff agent
+					if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
+						agents[a].communicate(tO.costmap, tO.market);
+						tO.communicate(agents[a].costmap, agents[a].market);
+					}
+					for(size_t b=a+1; b<agents.size(); b++){
+						if(a!=b && b!=0){
+							if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
+								agents[a].communicate(agents[b].costmap, agents[b].market);
+								agents[b].communicate(agents[a].costmap, agents[a].market);
 							}
 						}
 					}
 				}
-			} // end commo
+			}
+		} // end commo
 
-			tO.showCellsPlot();
-			waitKey(1);
-			tO.market.iterateTime();
+		tO.showCellsPlot();
+		waitKey(1);
+		tO.market.iterateTime();
 
-		} // end 1 sim iter
+	} // end 1 sim iter
 
-		dRewards.push_back( gReward - getPercentObserved( world.costmap, tO.costmap));
-	}
+	float dRewards = gReward - getPercentObserved( world.costmap, tO.costmap);
 
 	return dRewards;
 }
