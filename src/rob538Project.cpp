@@ -32,35 +32,36 @@ vector<float> mutate(vector<float> a);
 
 int main(){
 
-	int numAgents = 5;
-	int popSize = 20;
+	srand(time(NULL));
+	int numAgents = 3;
+	int popSize = 6;
 	vector<vector<float> > constants;
 
 	for(int i=0; i<popSize; i++){
 		vector<float> t;
 		for(int j=0; j<5; j++){
-			t.push_back(float(rand() % 10000) / 1000 - 50); // rand -50 -> 50 // frontier cells, frontier travel cost, dComArea, dRealys, dExplorers, relay travel cost
+			t.push_back(float(rand() % 10000) / 100 - 50); // rand -50 -> 50 // frontier cells, frontier travel cost, dComArea, dRealys, dExplorers, relay travel cost
 		}
 		constants.push_back( t );
 	}
 
-	int gSpace = 2;
-	float obsThresh = 40;
-	float comThresh = 80;
-	int maxTime = 50;
+	int gSpace = 4;
+	float obsThresh = 30;
+	float comThresh = 60;
+	int maxTime = 100;
 
-	string fName = "test6";
+	//string fName = "test6";
 	//fName.push_back("mineMap");
 	//fName.push_back("test6");
 	//fName.push_back("openTest");
-	//fName.push_back("slamMap");
+	string fName = "slamMap";
 	//fName.push_back("tunnelTest");
 
 	// create world
 	World world(fName, gSpace, obsThresh, comThresh);
-	cout << "main::loaded world" << fName << endl;
+	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 10;
+	int maxGen = 50;
 	for(int generations = 0; generations < maxGen; generations++){ // how many generations
 
 		Point sLoc;
@@ -72,7 +73,14 @@ int main(){
 			}
 		}
 
-		for(int pop = 0; pop < popSize; pop+=2){ // for each member of the populatioin
+		vector<int> indexList;
+		vector<float> scoreList;
+		for(int i=0; i<numAgents; i++){
+			indexList.push_back(-1);
+			scoreList.push_back(-INFINITY);
+		}
+
+		for(int pop = 0; pop < popSize; pop++){ // for each member of the populatioin
 
 			vector<vector<float> > testConsts;
 			testConsts.push_back(constants[pop]);
@@ -80,35 +88,40 @@ int main(){
 			float mScoreA = 0;
 			float mScoreB = 0;
 
-			for( int pIter = 0; pIter < 5; pIter++){ // how many iterations to test each agent
+			for( int pIter = 0; pIter < 1; pIter++){ // how many iterations to test each agent
 
 				for(int a=1; a<numAgents; a++){ // get the other agents
 					int ta = rand() % popSize;
 					testConsts.push_back( constants[ ta ] );
 				}
 
-				float tScoreA = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
+				float score = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
+				int index = pop;
 
-				if( tScoreA > mScoreA ){ // keep best score
-					mScoreA = tScoreA;
+				for(int i=0; i<numAgents; i++){
+					if( score > scoreList[i]){
+						float ts = scoreList[i];
+						float ti = indexList[i];
+
+						scoreList[i] = score;
+						indexList[i] = index;
+
+						score = ts;
+						index = ti;
+					}
 				}
 
-				testConsts[0] = constants[pop+1];
-
-				float tScoreB = runTest( testConsts, sLoc, world, numAgents, maxTime ); // run test
-
-				if( tScoreB > mScoreB ){ // keep best score
-					mScoreB = tScoreB;
-				}
-			}
-
-			if( mScoreA > mScoreB ){
-				constants[pop+1] = mutate( constants[pop] );
-			}
-			else{
-				constants[pop] = mutate( constants[pop+1] );
 			}
 		}
+
+
+		vector<vector<float> > tConst;
+		for(int i=0; i<numAgents/2; i++){
+			tConst.push_back( constants[ indexList[i]]);
+			tConst.push_back( mutate( constants[ indexList[i] ]) );
+		}
+
+		constants = tConst;
 	}
 }
 
@@ -138,7 +151,7 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 	}
 
 	Observer humanObserver(sLoc, numAgents, false, "operator");
-	Observer globalObserver(sLoc, numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
+	//Observer globalObserver(sLoc, numAgents, true, "global");// make this humanObserver get maps shared with it and NOT share its map with people it
 
 	time_t start = clock();
 
@@ -148,19 +161,19 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 	if(videoFlag){
 		//Size frameSize( static_cast<int>(world.costmap.cells.cols, world.costmap.cells.rows) );
 		//slamVideo.open("multiAgentInferen ce.avi",CV_FOURCC('M','J','P','G'), 30, frameSize, true );
-		cout << "Main::Videos started" << endl;
+		//cout << "Main::Videos started" << endl;
 	}
 
-	cout << "Main::Ready, press any key to begin." << endl;
+	//cout << "Main::Ready, press any key to begin." << endl;
 	waitKey(1);
-	cout << "Main::Here we go!" << endl;
+	//cout << "Main::Here we go!" << endl;
 
 	world.observe(humanObserver.cLoc, humanObserver.costmap);
 
 	int timeSteps = -1;
 	float percentObserved = 0;
 	while(timeSteps < maxTime-1 && percentObserved < 0.99){
-		cout << "Main::Starting while loop" << endl;
+		//cout << "Main::Starting while loop" << endl;
 		timeSteps++;
 		waitKey(1);
 
@@ -170,19 +183,19 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 				world.observe(agents[i].cLoc, agents[i].costmap);
 				agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
 
-				world.observe(agents[i].cLoc, globalObserver.costmap);
-				globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
-				globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
+				//world.observe(agents[i].cLoc, globalObserver.costmap);
+				//globalObserver.market.cLocs[agents[i].myIndex] = agents[i].cLoc;
+				//globalObserver.market.gLocs[agents[i].myIndex] = agents[i].gLoc;
 			}
 		}
 
-		cout << "Main::made observations" << endl;
+		//cout << "Main::made observations" << endl;
 
 		for(int commHops = 0; commHops < numAgents; commHops++){
 			// all agents communicate
 			for(int i=0; i<numAgents; i++){
 				// all agents communicate with global observer, always
-				agents[i].communicate( globalObserver.costmap, globalObserver.market );
+				//agents[i].communicate( globalObserver.costmap, globalObserver.market );
 				// all agents communicate with humanObserver, if possible
 				if( world.commoCheck(agents[i].cLoc, humanObserver.cLoc, comThresh) ){
 					agents[i].communicate( humanObserver.costmap, humanObserver.market );
@@ -200,16 +213,16 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 				}
 			}
 		}
-		cout << "Main::Out of communicate with other agents" << endl;
+		//cout << "Main::Out of communicate with other agents" << endl;
 
 
 		humanObserver.showCellsPlot();
 		waitKey(1);
-		globalObserver.showCellsPlot();
-		waitKey(1);
+		//globalObserver.showCellsPlot();
+		//waitKey(1);
 		humanObserver.market.iterateTime();
 
-		cout << "Main::Into plan for one timestep" << endl;
+		//cout << "Main::Into plan for one timestep" << endl;
 		// all agents plan for one timestep
 		for(int i=0; i<numAgents; i++){
 			agents[i].planRoleSwapping(); // includes updating internal cLoc
@@ -228,13 +241,13 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 
 		// print out progress
 		percentObserved = getPercentObserved(world.costmap, humanObserver.costmap);
-		cout << "------timeSteps & percent observed: " << timeSteps << " & " << percentObserved << endl;
+		//cout << "------timeSteps & percent observed: " << timeSteps << " & " << percentObserved << endl;
 
 	} // end timeStep in simulation
+	//cerr << ", " << percentObserved << ", ";
 
-	cout << "made it to the end of the simulation!" << endl;
+	//cout << "main::made it to the end of the simulation!" << endl;
 
-	/*
 	vector<float> dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
 
 	cout << "dReward: ";
@@ -242,9 +255,12 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 		cout << dReward[i] << ", ";
 	}
 	cout << endl;
-	*/
+	return dReward[0];
+
+
 	return percentObserved;
 
+	/*
 	ofstream myfile;
 	myfile.open ("/home/andy/git/rob538Project/results/run1.csv", ofstream::out | ofstream::app);
 	for(size_t i=0; i<timeLog.size(); i++){
@@ -253,6 +269,7 @@ float runTest(vector<vector<float> > constants, Point sLoc, World world, int num
 		myfile << percentObservedLog[i] << ",";
 	}
 	myfile.close();
+	*/
 
 	cerr << "wrote the file!" << endl;
 	waitKey(0);

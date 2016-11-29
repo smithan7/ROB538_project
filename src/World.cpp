@@ -28,8 +28,8 @@ World::World(string fName, int resolution, float obsThresh, float comThresh){
 	*/
 
 	initializeMaps(image, resolution);
-	cout << "world::costmap.cells.size(): " << costmap.cells.cols << " x " << costmap.cells.rows << endl;
-	cout << "World::Finished building " << fName << ".yml" << endl;
+	//cout << "world::costmap.cells.size(): " << costmap.cells.cols << " x " << costmap.cells.rows << endl;
+	//cout << "World::Finished building " << fName << ".yml" << endl;
 }
 
 bool World::commoCheck(Point aLoc, Point bLoc, float comThresh){
