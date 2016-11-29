@@ -26,30 +26,32 @@ using namespace cv;
 using namespace std;
 
 float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
-float getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
+vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
 vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime);
 vector<float> mutate(vector<float> a);
 
 int main(){
 
+	//maybe evaluate each node for exploration too? combine to one function?
+
 	srand(time(NULL));
 	int numAgents = 5;
-	int popSize = 40;
+	int popSize = 20;
 	int lenIters = 3;
 	vector<vector<float> > constants;
 
 	for(int i=0; i<popSize; i++){
 		vector<float> t;
-		for(int j=0; j<5; j++){
-			t.push_back(float(rand() % 10000) / 100 - 50); // rand -50 -> 50 // frontier cells, frontier travel cost, dComArea, dRealys, dExplorers, relay travel cost
+		for(int j=0; j<6; j++){
+			t.push_back(float(rand() % 1000) / 100 - 5); // rand -50 -> 50 // frontier cells, frontier travel cost, dComArea, dRealys, dExplorers, relay travel cost
 		}
 		constants.push_back( t );
 	}
 
-	int gSpace = 4;
+	int gSpace = 3;
 	float obsThresh = 30;
-	float comThresh = 60;
-	int maxTime = 100;
+	float comThresh = 30;
+	int maxTime = 50;
 
 	//string fName = "test6";
 	//fName.push_back("mineMap");
@@ -77,65 +79,76 @@ int main(){
 
 	for(int generations = 0; generations < maxGen; generations++){ // how many generations
 
-		vector<int> indexList;
-		vector<float> scoreList;
+		vector<int> indexRank; // index for each trial, index in ranking
+		vector<float> scoreList, scoreRank; // best lenient score of each agent in correct order, scores in ordered rank
 		for(int i=0; i<popSize; i++){
-			indexList.push_back(-1);
+			scoreRank.push_back(-INFINITY);
 			scoreList.push_back(-INFINITY);
+			indexRank.push_back( -1 );
 		}
 
 		float gs = 0;
 
-		for(int pop = 0; pop < popSize; pop++){ // for each member of the populatioin
+		for( int lIter = 0; lIter < lenIters; lIter++){ // how many iterations to test agents
 
-			vector<vector<float> > testConsts;
-			testConsts.push_back(constants[pop]);
-
-			float score =-INFINITY;
-			int index = pop;
-			float g = 0;
-
-			for( int pIter = 0; pIter < lenIters; pIter++){ // how many iterations to test each agent
-
-				for(int a=1; a<numAgents; a++){ // get random other agents
-					int ta = rand() % popSize;
-					testConsts.push_back( constants[ ta ] );
-				}
-
-				vector<float> r = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
-
-				float s = r[0];
-				g += r[1] / lenIters;
-
-				if(s > score){ // find best score, lenient
-					score = s;
-				}
+			vector<int> agentList; // 0 -> numAgents
+			for(int a=0; a<popSize; a++){
+				agentList.push_back(a);
 			}
 
-			gs += g / popSize;
+			float g = 0;
 
-			for(int i=0; i<popSize; i++){
-				if( score > scoreList[i]){
-					float ts = scoreList[i];
-					float ti = indexList[i];
+			for(int pIter = 0; pIter < popSize / numAgents; pIter++){ // for each member of the population
 
-					scoreList[i] = score;
-					indexList[i] = index;
+				vector<vector<float> > testConsts; // numAgents in test x 6
+				vector<int> testIndex; // which agents are in test
 
-					score = ts;
+				for(int a=0; a<numAgents; a++){ // get random other agents
+					int ta = rand() % agentList.size(); // rand agent
+					testConsts.push_back( constants[ agentList[ta] ] ); // get agent constants
+					testIndex.push_back( agentList[ta] ); // track which agent
+					agentList.erase( agentList.begin() + ta ); // erase from available pool
+				}
+
+				vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
+
+				for(int tr = 0; tr < numAgents; tr++){ // for each agent, check lenient score
+					if(rewards[tr] > scoreList[ testIndex[tr] ]){ // find best score of each agent, lenient
+						scoreList[ testIndex[tr] ] = rewards[tr];
+					}
+				}
+
+				g += rewards[numAgents] / (popSize / numAgents); // track average global score
+			}
+
+			gs += g / lenIters; // track average
+
+		}
+
+		for(int a=0; a<popSize; a++){ // rank scores and indices
+			int index = a;
+			for(int p=0; p<popSize; p++){
+				if( scoreList[a] > scoreRank[p]){ // better than current rank
+					// swap the index and corresponding score with ranked score and index
+					float ts = scoreRank[p];
+					float ti = indexRank[p];
+
+					scoreRank[p] = scoreList[a];
+					indexRank[p] = index;
+
+					scoreList[a] = ts;
 					index = ti;
 				}
 			}
-
 		}
 
 		gGen.push_back( gs );
 		cerr << gs << ", ";
 
 		vector<vector<float> > tConst;
-		for(int i=0; i<popSize/2; i++){
-			tConst.push_back( constants[ indexList[i]]);
-			tConst.push_back( mutate( constants[ indexList[i] ]) );
+		for(int i=0; i<popSize/2; i++){ // keep the top half and mutate
+			tConst.push_back( constants[ indexRank[i]]);
+			tConst.push_back( mutate( constants[ indexRank[i] ]) );
 		}
 		constants = tConst;
 	}
@@ -145,7 +158,7 @@ int main(){
 vector<float> mutate(vector<float> a){
 
 	for(int i=0; i<6; i++){
-		a[i] = a[i] + float(rand() % 1000 / 100) - 5;
+		a[i] = a[i] + float(rand() % 100 / 100) - 0.5;
 	}
 	return a;
 }
@@ -265,12 +278,10 @@ vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world,
 
 	//cout << "main::made it to the end of the simulation!" << endl;
 
-	float dReward = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
+	vector<float> dRewards = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
 
-	vector<float> rewards;
-	rewards.push_back( dReward );
-	rewards.push_back( percentObserved );
-	return rewards;
+	dRewards.push_back( percentObserved );
+	return dRewards;
 
 
 
@@ -290,59 +301,63 @@ vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world,
 } // end maps
 
 
-float getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward){
+vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward){
 
-	Observer tO(oLoc, agents.size(), false, "diff reward");
-	for(size_t a=0; a<agents.size(); a++){
-		agents[a].costmap.cells.release();
-	}
+	vector<float> dRewards;
+	for(size_t na=0; na<agents.size(); na++){
 
-	for(int t=0; t<timeSteps; t++){
-
-		// get position from timestep
+		Observer tO(oLoc, agents.size(), false, "diff reward");
 		for(size_t a=0; a<agents.size(); a++){
-			if( a != 0 ){
-				agents[a].cLoc = agents[a].pathHistory[t];
-			}
+			agents[a].costmap.cells.release();
 		}
 
-		// all agents observe
-		for(size_t a=0; a<agents.size(); a++){
-			if(a != 0 && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
-				world.observe(agents[a].cLoc, agents[a].costmap);
-				agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
-			}
-		}
-		world.observe(tO.cLoc, tO.costmap);
+		for(int t=0; t<timeSteps; t++){
 
-		// all agents communicate
-		for(size_t hops = 0; hops < agents.size(); hops++){
+			// get position from timestep
 			for(size_t a=0; a<agents.size(); a++){
-				// all agents communicate with humanObserver, if possible
-				if(a != 0){ // exclude diff agent
-					if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
-						agents[a].communicate(tO.costmap, tO.market);
-						tO.communicate(agents[a].costmap, agents[a].market);
-					}
-					for(size_t b=a+1; b<agents.size(); b++){
-						if(a!=b && b!=0){
-							if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
-								agents[a].communicate(agents[b].costmap, agents[b].market);
-								agents[b].communicate(agents[a].costmap, agents[a].market);
+				if( a != na ){
+					agents[a].cLoc = agents[a].pathHistory[t];
+				}
+			}
+
+			// all agents observe
+			for(size_t a=0; a<agents.size(); a++){
+				if(a != na && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
+					world.observe(agents[a].cLoc, agents[a].costmap);
+					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
+				}
+			}
+			world.observe(tO.cLoc, tO.costmap);
+
+			// all agents communicate
+			for(size_t hops = 0; hops < agents.size(); hops++){
+				for(size_t a=0; a<agents.size(); a++){
+					// all agents communicate with humanObserver, if possible
+					if(a != na){ // exclude diff agent
+						if(world.commoCheck(agents[a].cLoc, tO.cLoc, agents[a].comThresh)){
+							agents[a].communicate(tO.costmap, tO.market);
+							tO.communicate(agents[a].costmap, agents[a].market);
+						}
+						for(size_t b=a+1; b<agents.size(); b++){
+							if(a!=b && b!=na){
+								if(world.commoCheck(agents[a].cLoc, agents[b].cLoc, agents[a].comThresh)){
+									agents[a].communicate(agents[b].costmap, agents[b].market);
+									agents[b].communicate(agents[a].costmap, agents[a].market);
+								}
 							}
 						}
 					}
 				}
-			}
-		} // end commo
+			} // end commo
 
-		tO.showCellsPlot();
-		waitKey(1);
-		tO.market.iterateTime();
+			tO.showCellsPlot();
+			waitKey(1);
+			tO.market.iterateTime();
 
-	} // end 1 sim iter
+		} // end 1 sim iter
 
-	float dRewards = gReward - getPercentObserved( world.costmap, tO.costmap);
+		dRewards.push_back( gReward - getPercentObserved( world.costmap, tO.costmap) );
+	}
 
 	return dRewards;
 }
