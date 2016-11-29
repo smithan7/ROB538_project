@@ -29,6 +29,8 @@ float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
 vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
 vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime, bool differenceRewards);
 vector<float> mutate(vector<float> a);
+float getMean( vector<float> g);
+float getStdDev(float mean, vector<float> g);
 
 int main(){
 
@@ -60,6 +62,7 @@ int main(){
 	//fName.push_back("openTest");
 	string fName = "slamMap";
 	//fName.push_back("tunnelTest");
+
 
 	// create world
 	World world(fName, gSpace, obsThresh, comThresh);
@@ -104,9 +107,10 @@ int main(){
 			cerr << "difference lenient: ";
 		}
 
+		constants = testConstants;
+
 		for(int generations = 0; generations < maxGen; generations++){ // how many generations
 
-			constants = testConstants;
 			vector<int> indexRank; // index for each trial, index in ranking
 			vector<float> scoreList, scoreRank; // best lenient score of each agent in correct order, scores in ordered rank
 			for(int i=0; i<popSize; i++){
@@ -115,7 +119,9 @@ int main(){
 				indexRank.push_back( -1 );
 			}
 
-			float gs = 0;
+
+			vector<float> g;
+
 
 			for( int lIter = 0; lIter < lenIters; lIter++){ // how many iterations to test agents
 
@@ -123,8 +129,6 @@ int main(){
 				for(int a=0; a<popSize; a++){
 					agentList.push_back(a);
 				}
-
-				float g = 0;
 
 				for(int pIter = 0; pIter < popSize / numAgents; pIter++){ // for each member of the population
 
@@ -146,7 +150,7 @@ int main(){
 								scoreList[ testIndex[tr] ] = rewards[tr];
 							}
 						}
-						g += rewards[numAgents] / (popSize / numAgents); // track average global score
+						g.push_back( rewards[numAgents] / (popSize / numAgents) ); // track average global score
 					}
 					else{ // use global rewards?
 						for(int tr = 0; tr < numAgents; tr++){ // for each agent, check lenient score
@@ -154,13 +158,10 @@ int main(){
 								scoreList[ testIndex[tr] ] = rewards[0];
 							}
 						}
-						g += rewards[0] / (popSize / numAgents); // track average global score
+						g.push_back( rewards[0] / (popSize / numAgents) ); // track average global score
 					}
 
 				}
-
-				gs += g / lenIters; // track average
-
 			}
 
 			for(int a=0; a<popSize; a++){ // rank scores and indices
@@ -180,8 +181,9 @@ int main(){
 				}
 			}
 
-			gGen.push_back( gs );
-			cerr << gs << ", ";
+			float mg = getMean(g);
+			float sg = getStdDev( mg, g);
+			cerr << mg << ", " << sg << ",  ";
 
 			vector<vector<float> > tConst;
 			for(int i=0; i<popSize/2; i++){ // keep the top half and mutate
@@ -429,3 +431,30 @@ float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap){
 
 	return workingFree / globalFree;
 }
+
+float getMean( vector<float> g){
+
+	float sum = 0;
+	for(size_t i=0; i<g.size(); i++){
+		sum += g[i];
+	}
+
+	return sum / float( g.size() );
+
+}
+
+float getStdDev(float mean, vector<float> g){
+
+	float sum = 0;
+	for(size_t i=0; i<g.size(); i++){
+		sum += pow( g[i] - mean, 2 );
+	}
+	sum = sum / float( g.size() );
+	return sqrt( sum );
+
+}
+
+
+
+
+
