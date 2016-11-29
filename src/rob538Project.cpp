@@ -75,13 +75,15 @@ int main(){
 
 		vector<int> indexList;
 		vector<float> scoreList;
-		for(int i=0; i<numAgents; i++){
+		for(int i=0; i<popSize; i++){
 			indexList.push_back(-1);
 			scoreList.push_back(-INFINITY);
 		}
 
 		for(int pop = 0; pop < popSize; pop++){ // for each member of the populatioin
 
+			cerr << "constants.size(): " << constants.size();
+			cerr << "constants[pop].size(): " << constants[pop].size() << endl;
 			vector<vector<float> > testConsts;
 			testConsts.push_back(constants[pop]);
 
@@ -98,7 +100,7 @@ int main(){
 				float score = runTest( testConsts, sLoc, world, numAgents, maxTime); // run test
 				int index = pop;
 
-				for(int i=0; i<numAgents; i++){
+				for(int i=0; i<popSize; i++){
 					if( score > scoreList[i]){
 						float ts = scoreList[i];
 						float ti = indexList[i];
@@ -115,13 +117,15 @@ int main(){
 		}
 
 
+		cerr << "into training" << endl;
 		vector<vector<float> > tConst;
-		for(int i=0; i<numAgents/2; i++){
+		for(int i=0; i<popSize/2; i++){
 			tConst.push_back( constants[ indexList[i]]);
 			tConst.push_back( mutate( constants[ indexList[i] ]) );
 		}
-
+		cerr << "out of training" << endl;
 		constants = tConst;
+		cerr << "saved training" << endl;
 	}
 }
 
