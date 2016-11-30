@@ -39,7 +39,7 @@ int main(){
 
 	srand(time(NULL));
 	int numAgents = 5;
-	int popSize = 6;
+	int popSize = 4;
 	int lenIters = 1;
 	int nConstants = 6;
 
@@ -49,10 +49,10 @@ int main(){
 	}
 	testPopulations = pops;
 
-	int gSpace = 3;
+	int gSpace = 4;
 	float obsThresh = 30;
 	float comThresh = 30;
-	int maxTime = 50;
+	int maxTime = 150;
 	bool differenceRewards = false;
 
 	//string fName = "test6";
@@ -67,7 +67,7 @@ int main(){
 	World world(fName, gSpace, obsThresh, comThresh);
 	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 5;
+	int maxGen = 2;
 
 	vector<float> gGen;
 
@@ -105,6 +105,8 @@ int main(){
 			lenIters = 5;
 			cerr << "difference lenient: ";
 		}
+
+		pops = testPopulations;
 
 		for(int generations = 0; generations < maxGen; generations++){ // how many generations
 

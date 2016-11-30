@@ -45,7 +45,7 @@ void Population::mutate(){
 		m.push_back( constants[maxList[i]] );
 		vector<float> t;
 		for( int j=0; j<nConst; j++){
-			t.push_back(constants[maxList[i]][j] + float(rand() % 100 / 100) - 0.5);
+			t.push_back(constants[maxList[i]][j] + float(rand() % 100) / 100 - 0.5);
 		}
 		m.push_back( t );
 	}
