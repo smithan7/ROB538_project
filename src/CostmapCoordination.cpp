@@ -28,6 +28,7 @@ Point CostmapCoordination::marketFrontierPlanner(Costmap &costmap, Market &marke
 		marketFrontiers( costmap, market);
 		//plotFrontiers(costmap, frontierCells);
 
+
 		return market.gLocs[market.myIndex];
 	}
 	else{

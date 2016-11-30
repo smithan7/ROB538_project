@@ -12,6 +12,7 @@ CPP_SRCS += \
 ../src/GraphCoordination.cpp \
 ../src/Market.cpp \
 ../src/Observer.cpp \
+../src/Population.cpp \
 ../src/World.cpp \
 ../src/rob538Project.cpp 
 
@@ -24,6 +25,7 @@ OBJS += \
 ./src/GraphCoordination.o \
 ./src/Market.o \
 ./src/Observer.o \
+./src/Population.o \
 ./src/World.o \
 ./src/rob538Project.o 
 
@@ -36,6 +38,7 @@ CPP_DEPS += \
 ./src/GraphCoordination.d \
 ./src/Market.d \
 ./src/Observer.d \
+./src/Population.d \
 ./src/World.d \
 ./src/rob538Project.d 
 

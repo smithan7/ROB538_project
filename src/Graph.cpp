@@ -157,7 +157,7 @@ void Graph::displayCoordMap(Costmap &costmap, bool displayNodes){
 
 	if(displayNodes){
 		for(size_t i=0; i<nodeLocations.size(); i++){
-			circle(coordGraph,nodeLocations[i],3,white,-1,8);
+			circle(coordGraph,nodeLocations[i],2,white,-1,8);
 			//char str[50];
 			//sprintf(str,"%d",i);
 			//putText(coordGraph, str, temp, FONT_HERSHEY_PLAIN,0.5,green);
