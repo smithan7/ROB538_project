@@ -95,7 +95,7 @@ Point GraphCoordination::relayPlanning( Costmap &costmap, Market &market, Point 
 			int dRelays = relayCountTemp - relayCount;
 			int dExplorers = explorerCountTemp - explorerCount;
 
-			float rI = constants[0]*dComArea + constants[1]*dRelays + constants[2]*dExplorers + constants[3]*0; // put in path length
+			float rI = constants[0]*dComArea + constants[1]*dRelays + constants[2]*dExplorers + constants[3]*costmap.aStarDist(market.cLocs[market.myIndex], thinGraph.nodeLocations[i]); // put in path length
 
 			/*
 			cout << "dComArea / dRelays / dExplorers: " << dComArea << " / " << dRelays << " / " << dExplorers << endl;

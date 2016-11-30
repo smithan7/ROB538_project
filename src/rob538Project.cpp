@@ -52,7 +52,7 @@ int main(){
 
 	int gSpace = 3;
 	float obsThresh = 30;
-	float comThresh = 60;
+	float comThresh = 30;
 	int maxTime = 100;
 	bool differenceRewards = false;
 
@@ -68,7 +68,7 @@ int main(){
 	World world(fName, gSpace, obsThresh, comThresh);
 	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 25;
+	int maxGen = 10;
 
 	vector<float> gGen;
 
@@ -82,7 +82,7 @@ int main(){
 		}
 	}
 	*/
-	Point sLoc(15,15);
+	Point sLoc(55,15);
 
 	for(int bigTestIter = 0; bigTestIter < 4; bigTestIter+=2){
 
