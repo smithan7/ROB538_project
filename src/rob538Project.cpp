@@ -38,8 +38,8 @@ int main(){
 
 	srand(time(NULL));
 	int numAgents = 5;
-	int popSize = 20;
-	int lenIters = 3;
+	int popSize = 10;
+	int lenIters = 1;
 	vector<vector<float> > testConstants, constants;
 
 	for(int i=0; i<popSize; i++){
@@ -52,7 +52,7 @@ int main(){
 
 	int gSpace = 3;
 	float obsThresh = 30;
-	float comThresh = 30;
+	float comThresh = 60;
 	int maxTime = 100;
 	bool differenceRewards = false;
 
@@ -68,7 +68,7 @@ int main(){
 	World world(fName, gSpace, obsThresh, comThresh);
 	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 15;
+	int maxGen = 25;
 
 	vector<float> gGen;
 
@@ -82,9 +82,9 @@ int main(){
 		}
 	}
 	*/
-	Point sLoc(10,10);
+	Point sLoc(15,15);
 
-	for(int bigTestIter = 0; bigTestIter < 4; bigTestIter++){
+	for(int bigTestIter = 0; bigTestIter < 4; bigTestIter+=2){
 
 		if( bigTestIter == 0 ){ // global reward or difference rewards
 			differenceRewards = false;
@@ -150,7 +150,7 @@ int main(){
 								scoreList[ testIndex[tr] ] = rewards[tr];
 							}
 						}
-						g.push_back( rewards[numAgents] / (popSize / numAgents) ); // track average global score
+						g.push_back( rewards[numAgents] ); // track average global score
 					}
 					else{ // use global rewards?
 						for(int tr = 0; tr < numAgents; tr++){ // for each agent, check lenient score
@@ -158,7 +158,7 @@ int main(){
 								scoreList[ testIndex[tr] ] = rewards[0];
 							}
 						}
-						g.push_back( rewards[0] / (popSize / numAgents) ); // track average global score
+						g.push_back( rewards[0] ); // track average global score
 					}
 
 				}
@@ -322,7 +322,6 @@ vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world,
 
 	if( differenceRewards ){
 		vector<float> dRewards = getDifferenceRewards( agents, world, humanObserver.cLoc, timeSteps, percentObserved);
-
 		dRewards.push_back( percentObserved );
 		return dRewards;
 	}
@@ -453,8 +452,3 @@ float getStdDev(float mean, vector<float> g){
 	return sqrt( sum );
 
 }
-
-
-
-
-
