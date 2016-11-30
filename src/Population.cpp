@@ -27,7 +27,6 @@ void Population::mutate(){
 	vector<int> maxList;
 
 	for(int i = 0; i<popSize/2; i++){
-
 		int maxI = -1;
 		float maxV = -INFINITY;
 
@@ -39,11 +38,10 @@ void Population::mutate(){
 		}
 
 		maxList.push_back(maxI);
-		rewards[maxI] = -INFINITY;
+		rewards[maxI] = -1;
 	}
-
 	vector<vector<float> > m;
-	for(int i=0; i<popSize; i+=2){
+	for(int i=0; i<popSize/2; i++){
 		m.push_back( constants[maxList[i]] );
 		vector<float> t;
 		for( int j=0; j<nConst; j++){

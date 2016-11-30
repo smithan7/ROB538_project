@@ -39,7 +39,7 @@ int main(){
 
 	srand(time(NULL));
 	int numAgents = 5;
-	int popSize = 2;
+	int popSize = 6;
 	int lenIters = 1;
 	int nConstants = 6;
 
@@ -52,7 +52,7 @@ int main(){
 	int gSpace = 3;
 	float obsThresh = 30;
 	float comThresh = 30;
-	int maxTime = 100;
+	int maxTime = 50;
 	bool differenceRewards = false;
 
 	//string fName = "test6";
