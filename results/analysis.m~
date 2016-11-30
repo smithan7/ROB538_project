@@ -1,0 +1,54 @@
+clear all
+close all
+clc
+
+
+data_g = [ 0.109642, 0.0350446,  0.119037, 0.0485711,  0.0906766, 0.0327519,  0.179049, 0.0850993,  0.254659, 0.0254525,  0.209815, 0.0868624,  0.262357, 0.110531,  0.368885, 0.0346773,  0.40312, 0.0352505,  0.367872, 0.0281075,  0.317381, 0.079175,  0.311228, 0.0814724,  0.311861, 0.0485323,  0.294465, 0.0177639,  0.271574, 0.0905554];
+
+iter = 1;
+for i=1:2:length(data_g)
+   m_g(iter) = data_g(i);
+   s_g(iter) = data_g(i+1);
+   iter = iter +1;
+end
+
+x_g = 1:length(m_g);
+figure
+%plot(x_g, m_g, 'r', 'lineWidth' , 3);
+hold all
+errorbar(x_g,m_g,s_g, 'r.')
+
+data_gl = [0.10116, 0.0415372,  0.122394, 0.0297711,  0.135232, 0.0466047,  0.157333, 0.0763425,  0.199453, 0.10832,  0.274668, 0.0791461,  0.278846, 0.102182,  0.381789, 0.0635232,  0.396268, 0.0476656,  0.390672, 0.0636139,  0.379743, 0.0631864,  0.368601, 0.0661401, 0.372222, 0.0552704];
+
+iter = 1;
+for i=1:2:length(data_gl)
+   m_gl(iter) = data_gl(i);
+   s_gl(iter) = data_gl(i+1);
+   iter = iter +1;
+end
+
+x_gl = 1:length(m_gl);
+%plot(x_gl, m_gl, 'g', 'lineWidth', 3);
+errorbar(x_gl,m_gl,s_gl, 'g.')
+
+data_d = [0.103835, 0.147304, 0.254406, 0.328328, 0.318039, 0.322082, 0.347868, 0.37227, 0.347049, 0.327872, 0.379056, 0.405289];
+
+iter = 1;
+for i=1:length(data_d)
+   m_d(iter) = data_d(i);
+   %s_d(iter) = data_d(i+1);
+   iter = iter +1;
+end
+
+x_d = 1:length(m_d);
+plot(x_d, m_d, 'g', 'lineWidth', 3);
+
+grid on
+xlabel('Generation')
+ylabel('Reward')
+legend('G', 'G_L')
+
+plot(x_gl, m_gl, 'g', 'lineWidth', 3);
+plot(x_g, m_g, 'r', 'lineWidth' , 3);
+
+
