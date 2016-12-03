@@ -43,6 +43,13 @@ void Population::mutate(){
 
 	vector<int> maxList;
 
+	/*
+	cerr << endl << "rewards: " << endl;
+	for(int i=0; i<popSize; i++){
+		cerr << rewards[i] << endl;
+	}
+	*/
+
 	for(int i = 0; i<popSize/2; i++){
 		int maxI = -1;
 		float maxV = -INFINITY;

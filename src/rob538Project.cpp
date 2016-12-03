@@ -37,8 +37,8 @@ int main(){
 	//maybe evaluate each node for exploration too? combine to one function?
 
 	srand(time(NULL));
-	int numAgents = 5;
-	int popSize = 2;
+	int numAgents = 7;
+	int popSize = 4;
 	int numLenIters = 2;
 	int nConstants = 6;
 
@@ -48,10 +48,10 @@ int main(){
 	}
 	testPopulations = pops;
 
-	int gSpace = 8;
-	float obsThresh = 30;
-	float comThresh = 45;
-	int maxTime = 50;
+	int gSpace = 4;
+	float obsThresh = 25;
+	float comThresh = 38;
+	int maxTime = 100;
 	bool differenceRewards, leniency, hallOfFame;
 
 	//string fName = "test6";
@@ -66,10 +66,11 @@ int main(){
 	World world(fName, gSpace, obsThresh, comThresh);
 	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 5;
+	int maxGen = 25;
 
 	vector<float> gGen;
 
+	/*
 	Point sLoc;
 	while(true){
 		Point tLoc(rand() % world.costmap.cells.cols, rand() % world.costmap.cells.rows);
@@ -78,9 +79,12 @@ int main(){
 			break;
 		}
 	}
-	//Point sLoc(30,15);
+	cerr << "sLoc: " << sLoc << endl;
+	*/
+	//Point sLoc(60,90);
+	Point sLoc(15,15);
 
-	for(int bigTestIter = 4; bigTestIter < 6; bigTestIter++){
+	for(int bigTestIter = 0; bigTestIter < 6; bigTestIter++){
 
 		if( bigTestIter == 0 ){ // global reward or difference rewards
 			cerr << "global: ";
@@ -100,8 +104,9 @@ int main(){
 						vector<vector<float> > testConsts; // numAgents in test x 6
 
 						for(int a=0; a<numAgents; a++){ // get random other agents
-							pops[a].testIndex = rand() % pops[a].open.size(); // rand agent
-							pops[a].open.erase( pops[a].open.begin() + pops[a].testIndex); // erase from available pool
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
 							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
 						}
 
@@ -120,7 +125,6 @@ int main(){
 				float sg = getStdDev( mg, g);
 				cerr << mg << ", " << sg << ",  ";
 			}
-			cerr << endl;
 		}
 		else if( bigTestIter == 1 ){ // global reward or difference rewards
 			cerr << "global lenient: ";
@@ -142,8 +146,9 @@ int main(){
 						vector<vector<float> > testConsts; // numAgents in test x 6
 
 						for(int a=0; a<numAgents; a++){ // get random other agents
-							pops[a].testIndex = rand() % pops[a].open.size(); // rand agent
-							pops[a].open.erase( pops[a].open.begin() + pops[a].testIndex); // erase from available pool
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
 							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
 						}
 
@@ -164,7 +169,6 @@ int main(){
 				float sg = getStdDev( mg, g);
 				cerr << mg << ", " << sg << ",  ";
 			}
-			cerr << endl;
 		}
 		else if( bigTestIter == 2 ){ // global reward or difference rewards
 			cerr << "difference: ";
@@ -184,8 +188,9 @@ int main(){
 						vector<vector<float> > testConsts; // numAgents in test x 6
 
 						for(int a=0; a<numAgents; a++){ // get random other agents
-							pops[a].testIndex = rand() % pops[a].open.size(); // rand agent
-							pops[a].open.erase( pops[a].open.begin() + pops[a].testIndex); // erase from available pool
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
 							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
 						}
 
@@ -226,8 +231,9 @@ int main(){
 						vector<vector<float> > testConsts; // numAgents in test x 6
 
 						for(int a=0; a<numAgents; a++){ // get random other agents
-							pops[a].testIndex = rand() % pops[a].open.size(); // rand agent
-							pops[a].open.erase( pops[a].open.begin() + pops[a].testIndex); // erase from available pool
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
 							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
 						}
 
