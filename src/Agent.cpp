@@ -37,18 +37,6 @@ void Agent::act(){
 	if( !this->market.contactWithObserver && true){
 		gLoc = oLoc;
 	}
-	else if(cLoc == gLoc){
-		while(true){
-			Point g;
-			g.x = gLoc.x + rand() % 5 - 2;
-			g.y = gLoc.y + rand() % 5 - 2;
-
-			if(costmap.cells.at<short>(g) == costmap.obsFree){
-				gLoc = g;
-				break;
-			}
-		}
-	}
 
 	myPath = costmap.aStarPath(cLoc, gLoc);
 	cLoc = myPath[1];
