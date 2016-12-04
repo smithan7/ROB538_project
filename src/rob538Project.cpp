@@ -29,7 +29,6 @@ using namespace std;
 float getPercentObserved(Costmap &globalCostmap, Costmap &workingCostmap);
 vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point oLoc, int timeSteps, float gReward);
 vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime, bool differenceRewards);
-vector<float> mutate(vector<float> a);
 float getMean( vector<float> g);
 float getStdDev(float mean, vector<float> g);
 
@@ -38,9 +37,9 @@ int main(){
 	//maybe evaluate each node for exploration too? combine to one function?
 
 	srand(time(NULL));
-	int numAgents = 5;
+	int numAgents = 7;
 	int popSize = 4;
-	int lenIters = 1;
+	int numLenIters = 2;
 	int nConstants = 6;
 
 	vector<Population> pops, testPopulations;
@@ -50,10 +49,10 @@ int main(){
 	testPopulations = pops;
 
 	int gSpace = 4;
-	float obsThresh = 30;
-	float comThresh = 30;
-	int maxTime = 150;
-	bool differenceRewards = false;
+	float obsThresh = 25;
+	float comThresh = 38;
+	int maxTime = 100;
+	bool differenceRewards, leniency, hallOfFame;
 
 	//string fName = "test6";
 	//fName.push_back("mineMap");
@@ -67,7 +66,7 @@ int main(){
 	World world(fName, gSpace, obsThresh, comThresh);
 	//cout << "main::loaded world" << fName << endl;
 
-	int maxGen = 2;
+	int maxGen = 25;
 
 	vector<float> gGen;
 
@@ -80,65 +79,81 @@ int main(){
 			break;
 		}
 	}
+	cerr << "sLoc: " << sLoc << endl;
 	*/
-	Point sLoc(45,15);
+	//Point sLoc(60,90);
+	Point sLoc(15,15);
 
-	for(int bigTestIter = 0; bigTestIter < 4; bigTestIter+=2){
+	for(int bigTestIter = 0; bigTestIter < 6; bigTestIter++){
 
 		if( bigTestIter == 0 ){ // global reward or difference rewards
-			differenceRewards = false;
-			lenIters = 1;
 			cerr << "global: ";
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.9;
+				}
+				vector<float> g; // tracks global reward
+
+					for(int i=0; i<numAgents; i++){
+						pops[i].reset();
+					}
+
+					for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+
+						vector<vector<float> > testConsts; // numAgents in test x 6
+
+						for(int a=0; a<numAgents; a++){ // get random other agents
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
+							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
+						}
+
+						vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, false); // run test
+
+						for(int a = 0; a < numAgents; a++){ // for each agent, check lenient score
+							pops[a].rewards[pops[a].testIndex] = rewards[0];
+						}
+						g.push_back( rewards[0] ); // track average global score
+					}
+
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
+			}
 		}
 		else if( bigTestIter == 1 ){ // global reward or difference rewards
-			differenceRewards = false;
-			lenIters = 5;
 			cerr << "global lenient: ";
-		}
-		else if( bigTestIter == 2 ){ // global reward or difference rewards
-			differenceRewards = true;
-			lenIters = 1;
-			cerr << "difference: ";
-		}
-		else if( bigTestIter == 3 ){ // global reward or difference rewards
-			differenceRewards = true;
-			lenIters = 5;
-			cerr << "difference lenient: ";
-		}
-
-		pops = testPopulations;
-
-		for(int generations = 0; generations < maxGen; generations++){ // how many generations
-
-			vector<float> g;
-
-			for( int lIter = 0; lIter < lenIters; lIter++){ // how many iterations to test agents
-
-				for(int i=0; i<numAgents; i++){
-					pops[i].reset();
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.5;
 				}
+				vector<float> g; // tracks global reward
 
-				for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+				for( int lIter = 0; lIter < numLenIters; lIter++){ // how many iterations to test agents
 
-					vector<vector<float> > testConsts; // numAgents in test x 6
-
-					for(int a=0; a<numAgents; a++){ // get random other agents
-						pops[a].testIndex = rand() % pops[a].open.size(); // rand agent
-						pops[a].open.erase( pops[a].open.begin() + pops[a].testIndex); // erase from available pool
-						testConsts.push_back( pops[a].constants[pops[a].testIndex] );
+					for(int i=0; i<numAgents; i++){
+						pops[i].reset();
 					}
 
-					vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, differenceRewards); // run test
+					for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
 
-					if( differenceRewards ){ // use difference rewards?
-						for(int a = 0; a < numAgents; a++){ // for each agent, check lenient score
-							if(rewards[a] > pops[a].rewards[pops[a].testIndex]){ // find best score of each agent, lenient
-								pops[a].rewards[pops[a].testIndex] = rewards[a];
-							}
+						vector<vector<float> > testConsts; // numAgents in test x 6
+
+						for(int a=0; a<numAgents; a++){ // get random other agents
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
+							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
 						}
-						g.push_back( rewards[numAgents] ); // track average global score
-					}
-					else{ // use global rewards?
+
+						vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, false); // run test
+
 						for(int a = 0; a < numAgents; a++){ // for each agent, check lenient score
 							if(rewards[a] > pops[a].rewards[pops[a].testIndex]){ // find best score of each agent, lenient
 								pops[a].rewards[pops[a].testIndex] = rewards[0];
@@ -146,29 +161,192 @@ int main(){
 						}
 						g.push_back( rewards[0] ); // track average global score
 					}
-
 				}
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
 			}
+		}
+		else if( bigTestIter == 2 ){ // global reward or difference rewards
+			cerr << "difference: ";
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.5;
+				}
+				vector<float> g; // tracks global reward
 
-			for(int a=0; a<numAgents; a++){ // rank scores and indices
-				pops[a].mutate();
+					for(int i=0; i<numAgents; i++){
+						pops[i].reset();
+					}
+
+					for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+
+						vector<vector<float> > testConsts; // numAgents in test x 6
+
+						for(int a=0; a<numAgents; a++){ // get random other agents
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
+							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
+						}
+
+						vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, true); // run test
+
+						for(int a = 0; a < numAgents; a++){ // for each agent, check lenient score
+							pops[a].rewards[pops[a].testIndex] = rewards[a];
+						}
+						g.push_back( rewards[numAgents] ); // track average global score
+					}
+
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
 			}
+		}
+		else if( bigTestIter == 3 ){ // global reward or difference rewards
+			cerr << "difference lenient: ";
 
-			float mg = getMean(g);
-			float sg = getStdDev( mg, g);
-			cerr << mg << ", " << sg << ",  ";
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.5;
+				}
+				vector<float> g; // tracks global reward
+
+				for( int lIter = 0; lIter < numLenIters; lIter++){ // how many iterations to test agents
+
+					for(int i=0; i<numAgents; i++){
+						pops[i].reset();
+					}
+
+					for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+
+						vector<vector<float> > testConsts; // numAgents in test x 6
+
+						for(int a=0; a<numAgents; a++){ // get random other agents
+							int choose =  rand() % pops[a].open.size() ;
+							pops[a].testIndex = pops[a].open[choose]; // rand agent
+							pops[a].open.erase( pops[a].open.begin() + choose); // erase from available pool
+							testConsts.push_back( pops[a].constants[pops[a].testIndex] );
+						}
+
+						vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, true); // run test
+
+						for(int a = 0; a < numAgents; a++){ // for each agent, check lenient score
+							if(rewards[a] > pops[a].rewards[pops[a].testIndex]){ // find best score of each agent, lenient
+								pops[a].rewards[pops[a].testIndex] = rewards[a];
+							}
+						}
+						g.push_back( rewards[numAgents] ); // track average global score
+					}
+				}
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
+			}
+		}
+		else if( bigTestIter == 4 ){
+			cerr << "hall of fame: ";
+
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.5;
+				}
+
+				vector<float> g; // tracks global reward
+
+					for(int i=0; i<numAgents; i++){
+						pops[i].getStar();
+						pops[i].reset();
+					}
+
+					for( int aIter = 0; aIter < numAgents; aIter++){
+
+						for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+
+							vector<vector<float> > testConsts; // numAgents in test x 6
+							testConsts.push_back( pops[aIter].constants[pIter] );
+
+							for(int a=0; a<numAgents; a++){ // get random other agents
+								if( a != aIter ){
+									testConsts.push_back( pops[a].constants[pops[a].indexStar] );
+								}
+							}
+
+							vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, false); // run test
+
+							pops[aIter].rewards[pIter] = rewards[0];
+
+							g.push_back( rewards[0] ); // track average global score
+
+						}
+					}
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
+			}
+		}
+		else if( bigTestIter == 5 ){ // global reward or difference rewards
+			cerr << "difference hall of fames: ";
+
+			pops = testPopulations; // initialize
+			for(int generations = 0; generations < maxGen; generations++){ // how many generations
+
+				for(int i = 0; i<numAgents; i++){
+					pops[i].learningRate *= 0.5;
+				}
+
+				vector<float> g; // tracks global reward
+
+					for(int i=0; i<numAgents; i++){
+						pops[i].getStar();
+						pops[i].reset();
+					}
+
+					for( int aIter = 0; aIter < numAgents; aIter++){
+
+						for(int pIter = 0; pIter < popSize; pIter++){ // for each member of the population
+
+							vector<vector<float> > testConsts; // numAgents in test x 6
+							testConsts.push_back( pops[aIter].constants[pIter] );
+
+							for(int a=0; a<numAgents; a++){ // get random other agents
+								if( a != aIter ){
+									testConsts.push_back( pops[a].constants[pops[a].indexStar] );
+								}
+							}
+
+							vector<float> rewards = runTest( testConsts, sLoc, world, numAgents, maxTime, true); // run test
+
+							pops[aIter].rewards[pIter] = rewards[aIter];
+							g.push_back( rewards[numAgents] ); // track average global score
+						}
+					}
+				for(int a=0; a<numAgents; a++){ // rank scores and indices
+					pops[a].mutate();
+				}
+				float mg = getMean(g);
+				float sg = getStdDev( mg, g);
+				cerr << mg << ", " << sg << ",  ";
+			}
 		}
 		cerr << endl;
 	}
-
-}
-
-vector<float> mutate(vector<float> a){
-
-	for(int i=0; i<6; i++){
-		a[i] = a[i] + float(rand() % 100 / 100) - 0.5;
-	}
-	return a;
 }
 
 vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world, int numAgents, int maxTime, bool differenceRewards){
@@ -217,7 +395,7 @@ vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world,
 
 		// all agents observe
 		for(int i=0; i<numAgents; i++){
-			if( agents[i].market.roles[i] == 'e'){
+			if( agents[i].market.roles[i] == 'e' || true){
 				world.observe(agents[i].cLoc, agents[i].costmap);
 				agents[i].market.updateMarket(agents[i].cLoc, agents[i].gLoc);
 
@@ -296,22 +474,6 @@ vector<float> runTest(vector<vector<float> > constants, Point sLoc, World world,
 		gReward.push_back( percentObserved );
 		return gReward;
 	}
-
-
-
-	/*
-	ofstream myfile;
-	myfile.open ("/home/andy/git/rob538Project/results/run1.csv", ofstream::out | ofstream::app);
-	for(size_t i=0; i<timeLog.size(); i++){
-		myfile << mapLog << ",";
-		myfile << timeLog[i] << ",";
-		myfile << percentObservedLog[i] << ",";
-	}
-	myfile.close();
-	*/
-
-	cerr << "wrote the file!" << endl;
-	waitKey(0);
 } // end maps
 
 
@@ -326,20 +488,21 @@ vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point o
 			agents[a].costmap.cells.release();
 		}
 
+
+		// all agents observe
+		for(size_t a=0; a<agents.size(); a++){
+			if(a != na){ // exclude diff agent
+				world.observe(agents[a].cLoc, agents[a].costmap);
+				agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
+			}
+		}
+
 		for(int t=0; t<timeSteps; t++){
 
 			// get position from timestep
 			for(size_t a=0; a<agents.size(); a++){
 				if( a != na ){
 					agents[a].cLoc = agents[a].pathHistory[t];
-				}
-			}
-
-			// all agents observe
-			for(size_t a=0; a<agents.size(); a++){
-				if(a != na && agents[a].roleHistory[t] == 'e' || t == 0 ){ // exclude diff agent
-					world.observe(agents[a].cLoc, agents[a].costmap);
-					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
 				}
 			}
 
@@ -363,6 +526,15 @@ vector<float> getDifferenceRewards( vector<Agent> &agents, World &world, Point o
 					}
 				}
 			} // end commo
+
+
+			// all agents observe
+			for(size_t a=0; a<agents.size(); a++){
+				if(a != na && agents[a].roleHistory[t] == 'e' && agents[a].market.contactWithObserver){ // exclude diff agent
+					world.observe(agents[a].cLoc, agents[a].costmap);
+					agents[a].market.updateMarket(agents[a].cLoc, agents[a].gLoc);
+				}
+			}
 
 			tO.showCellsPlot();
 			waitKey(1);

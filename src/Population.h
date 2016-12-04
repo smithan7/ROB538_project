@@ -22,13 +22,20 @@ public:
 	virtual ~Population();
 	void mutate();
 	void reset();
+	void getStar();
 
+	float learningRate;
 	vector<vector<float> > constants;
 	int testIndex;
 	vector<int> open;
 	vector<float> rewards;
 	int popSize;
 	int nConst;
+
+	float rewardStar;
+	vector<float> constStar;
+	int indexStar;
+
 };
 
 #endif /* POPULATION_H_ */
